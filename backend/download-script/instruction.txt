@@ -1,0 +1,53 @@
+## Place download-script folder in backend folder
+## Navigate to backend/download-script folder and create a virtual environment
+py -m venv .venv
+
+## Activate the virtual environment
+.venv\Scripts\activate
+
+## install dependencies
+pip install -r requirements.txt
+
+## on downloads.py, comment out the following line (about line 17-):
+#nltk.data.find('tokenizers/punkt_tab')
+# nltk.download('punkt_tab') 
+
+
+## Set value for HF_ENDPOINT and HUGGINGFACE_HUB_BASE_URL environment variables
+.\set_env_vars.bat
+
+## Run the download script
+py downloads.py
+
+## To run downloads.py again in the future, just navigate to download-script folder, activate the virtual environment and run the script
+## Activate the virtual environment 
+.venv\Scripts\activate
+## Run the download script
+py downloads.py
+
+
+
+Note:
+* I have changed the content of requirements.txt
+- Old content of requirements.txt:
+flask==2.0.1
+flask-cors==3.0.10
+pdfplumber==0.7.4
+requests==2.26.0
+transformers==4.11.3
+nltk==3.6.5
+beautifulsoup4==4.10.0
+
+- New content of requirements.txt:
+flask==2.0.1
+Werkzeug<2.1
+flask-cors==3.0.10
+pdfplumber==0.7.4
+requests==2.26.0
+transformers>=4.36
+tokenizers>=0.15
+nltk==3.6.5
+beautifulsoup4==4.10.0
+
+* Test model loading
+python -c "from transformers import pipeline; pipeline('summarization', model='facebook/bart-large-cnn')"
