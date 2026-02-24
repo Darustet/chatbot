@@ -47,10 +47,16 @@ if not exist .venv (
 
 call .venv\Scripts\activate.bat
 
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+REM --- Step 1: Install exact requirements ---
+echo Installing dependencies from requirements.txt...
+python -m pip install -r requirements.txt --no-cache-dir
+
+REM --- Step 2: Model Check ---
+echo Verifying Summarization Pipeline...
+python -c "from transformers import pipeline; print('Summarization Ready!' if 'summarization' in [task for task in pipeline.get_supported_tasks()])"
 
 call deactivate
+
 
 REM -------------------------
 REM Install Node dependencies
