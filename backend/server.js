@@ -99,9 +99,7 @@ app.get("/uni/:uni", async (req, res) => {
         const thesesData = [];
 
         if (req.params.uni === "AALTO") {
-            // Aalto DSpace API response parsing
-            console.log(response.data._embedded.searchResult);
-           
+            // Aalto DSpace API response parsing           
             // Extract data from each object
             const objects = response.data._embedded.searchResult._embedded.objects;
             objects.forEach((obj, index) => {

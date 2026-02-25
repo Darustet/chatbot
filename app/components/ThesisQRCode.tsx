@@ -24,7 +24,7 @@ export const ThesisQRCode = ({ handle, universityCode, size = 150 }: ThesisQRCod
     const cleanHandle = handle.replace(/^#/, '');
     if (universityCode === 'AALTO') {
       // Aalto theses use a different URL structure
-      return `https://aaltodoc.aalto.fi/handle/${cleanHandle}`;
+      return `https://aaltodoc.aalto.fi${cleanHandle}`;
     } else {  
       // If it's a handle with /handle/ prefix, use it
       if (cleanHandle.startsWith('/handle/')) {
