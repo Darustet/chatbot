@@ -49,11 +49,28 @@ call .venv\Scripts\activate.bat
 
 REM --- Step 1: Install exact requirements ---
 echo Installing dependencies from requirements.txt...
-python -m pip install -r requirements.txt --no-cache-dir
+
+python -m pip install -r requirements.txt -v
+
+if errorlevel 1 (
+    echo ERROR: Python dependency installation failed
+    call deactivate
+    cd ..\..
+    pause
+    exit /b 1
+)
 
 REM --- Step 2: Model Check ---
 echo Verifying Summarization Pipeline...
-python -c "from transformers import pipeline; print('Summarization Ready!' if 'summarization' in [task for task in pipeline.get_supported_tasks()])"
+python -c "from transformers.pipelines import SUPPORTED_TASKS; print('Summarization Ready!' if 'summarization' in SUPPORTED_TASKS else 'ERROR: Summarization pipeline not available.')"
+
+if errorlevel 1 (
+    echo ERROR: Transformers verification failed
+    call deactivate
+    cd ..\..
+    pause
+    exit /b 1
+)
 
 call deactivate
 

@@ -45,8 +45,11 @@ except ImportError:
 
 def download_file(url):
     try:
-        if not url.startswith('http'):
+        # if url is from "theseus.fi" and not start with http, prepend the base URL 
+        if "theseus.fi" in url and not url.startswith("http"):
             url = 'https://www.theseus.fi' + url
+        elif "aaltodoc.aalto.fi" in url and not url.startswith("http"):
+            url = 'https://aaltodoc.aalto.fi' + url
         encoded_url = urllib.parse.quote(url, safe=":/?=&")
         print(f"Downloading from: {encoded_url}")
         thesis_id = hash(url) % 10000
@@ -138,6 +141,7 @@ def cleanup_temp_files(max_age_hours=24):
     except Exception as e:
         print(f"Error cleaning up temp files: {e}")
 
+# Extract text from PDF, trying to find abstract section, and return the text content of the abstract section. If abstract section is not found, return the text content of the first page.
 def extract_text_from_pdf(pdf_path):
     try:
         if not pdf_path or not os.path.exists(pdf_path):
@@ -170,6 +174,7 @@ def extract_text_from_pdf(pdf_path):
         print(f"Error extracting text from PDF: {e}")
         return ""
 
+# Receive unstructured text that may contain the abstract sention and return the cleaned abstract text.
 def extract_abstract_content(text):
     lines = text.split('\n')
     abstract_start = -1
@@ -232,6 +237,29 @@ def extract_abstract_content(text):
     print(f"Extracted abstract ({len(abstract_text)} chars): {abstract_text[:200]}...")
     return abstract_text
 
+def get_aalto_abstract(thesis_id):
+    api_url = f"{AALTO_BASE_URL}/server/api/core/items/{thesis_id}"
+    print(f"fetch data from {api_url}")
+    response = requests.get(api_url)
+    response.raise_for_status()
+    data = response.json()
+    print(f"data: {data.get('metadata', {}).get('dc.description.abstract', [])}")
+    # Get abstract from metadata
+    abstracts = data.get('metadata', {}).get('dc.description.abstract', [])
+    # If abstract is found in english, take that, otherwise take Finnish version, if it is available
+    abstract_text = ""
+    for abs in abstracts:
+        if abs.get('language') == 'en':
+            abstract_text = abs.get('value', '')
+            break
+    if not abstract_text:
+        for abs in abstracts:
+            if abs.get('language') == 'fi':
+                abstract_text = abs.get('value', '')
+                break
+    print(f"Extracted Aalto abstract ({len(abstract_text)} chars): {abstract_text[:200]}...")
+    return abstract_text  
+
 def manual_summarize(text, num_points=4):
     if not sent_tokenize:
         sentences = [s.strip() for s in re.split(r'[.!?]', text) if s.strip()]
@@ -250,11 +278,8 @@ def manual_summarize(text, num_points=4):
         points = valid_sentences[:num_points]
     return '\n'.join([f"• {point.strip()}" for point in points])
 
-def generate_thesis_points(text):
+def generate_thesis_points(abstract_text):
     try:
-        abstract_text = extract_abstract_content(text)
-        print(f"EXTRACTED ABSTRACT ({len(abstract_text)} chars):")
-        print(abstract_text[:500] + '...' if len(abstract_text) > 500 else abstract_text)
         if not abstract_text or len(abstract_text) < 60:
             return "• No meaningful abstract content found to summarize.\n• The PDF might not contain an abstract section.\n• Try a different thesis."
         manual_points = manual_summarize(abstract_text, num_points=4)
@@ -304,6 +329,71 @@ app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
+AALTO_BASE_URL = "https://aaltodoc.aalto.fi"
+# https://aaltodoc.aalto.fi/server/api/core/bitstreams/c0bc97b4-6298-4ef6-b796-f9df5356b64c/content
+
+def resolve_aalto_item_uuid(handle_value: str):
+    try:
+        # Handle both direct URLs and handle identifiers
+        if not handle_value:
+            return None
+        if handle_value.startswith('http'):
+            handle_url = handle_value
+        elif handle_value.startswith('/handle/'):
+            handle_url = f"{AALTO_BASE_URL}{handle_value}"
+        else:
+            handle_url = f"{AALTO_BASE_URL}/handle/{handle_value.lstrip('/')}"
+        session = requests.Session()
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = session.get(handle_url, headers=headers, allow_redirects=True, timeout=15)
+        response.raise_for_status()
+        final_url = response.url
+        print(f"Resolved Aalto handle to URL: {final_url}")
+        if '/items/' not in final_url:
+            return None
+        item_uuid = final_url.split('/items/')[1]
+        print(f"Extracted item UUID: {item_uuid}")
+        return item_uuid
+    except Exception as e:
+        print(f"Error resolving Aalto handle: {e}")
+        return None
+
+def fetch_aalto_bitstream_id(item_uuid: str):
+    try:
+        if not item_uuid:
+            return None
+        api_url = f"{AALTO_BASE_URL}/server/api/core/items/{item_uuid}/bundles"
+        session = requests.Session()
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = session.get(api_url, headers=headers, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        bitstreams = []
+        if isinstance(data, dict):
+            if "_embedded" in data and "bitstreams" in data["_embedded"]:
+                bitstreams = data["_embedded"]["bitstreams"]
+            elif "bitstreams" in data:
+                bitstreams = data["bitstreams"]
+        if not bitstreams:
+            return None
+
+        def is_pdf(bs):
+            name = (bs.get("name") or "").lower()
+            bundle = (bs.get("bundleName") or "").upper()
+            mime = (bs.get("mimeType") or "").lower()
+            return name.endswith('.pdf') or mime == 'application/pdf' or bundle == 'ORIGINAL'
+
+        pdf_candidates = [bs for bs in bitstreams if is_pdf(bs)]
+        chosen = pdf_candidates[0] if pdf_candidates else bitstreams[0]
+        return chosen.get("uuid") or chosen.get("id")
+    except Exception as e:
+        print(f"Error fetching Aalto bitstreams: {e}")
+        return None
+
 @app.route('/download', methods=['GET'])
 @cross_origin()
 def download():
@@ -311,51 +401,78 @@ def download():
         print("\n====== NEW DOWNLOAD REQUEST ======")
         print("REQUEST ARGS:", request.args)
         key = request.args.get('key', default="", type=str)
+        uni = request.args.get('uni', default="", type=str)
+        thesis_id = request.args.get('thesisId', default="", type=str)
+        # print debug info: thesis key, uni, theis id
+        print("THESIS KEY:", key, "UNIVERSITY CODE:", uni, "THESIS ID: ", thesis_id)
+
         if key.startswith('"') and key.endswith('"'):
             key = key[1:-1]
         print("THESIS KEY:", key)
         if not key:
             print("Error: Empty thesis key provided")
             return jsonify({"error": "No thesis identifier provided"}), 400
+        # Check for university code presence
+        if not uni:
+            print("Error: No university code provided")
+            return jsonify({"error": "No university code provided"}), 400
+        print("UNIVERSITY CODE:", uni)
         retrieve = request.args.get('retrieve', default="false", type=str)
-        try:
-            if not key.startswith('http'):
-                if key.startswith('/handle/'):
-                    full_url = 'https://www.theseus.fi' + key
-                else:
-                    key = '/handle/' + key.lstrip('/').replace('#', '')
-                    full_url = 'https://www.theseus.fi' + key
-            else:
-                full_url = key
-            print("DOWNLOADING FILE FROM:", full_url)
-        except Exception as url_error:
-            print(f"Error constructing URL: {url_error}")
-            return jsonify({"error": f"Invalid thesis identifier format: {key}"}), 400
-        if hash(key) % 100 < 5:
-            cleanup_temp_files()
-        if retrieve.lower() == "false":
-            temp_file_path = download_file(full_url)
-            if temp_file_path:
-                try:
-                    print(f"SUCCESS: Downloaded PDF to {temp_file_path}")
-                    print(f"File size: {os.path.getsize(temp_file_path)} bytes")
-                    pdf_text = extract_text_from_pdf(temp_file_path)
-                    if not pdf_text:
-                        print("ERROR: No text extracted from the PDF.")
-                        backup_summary = "• No text could be extracted from the PDF. Try a different thesis."
-                        return jsonify({"summary": backup_summary, "text": ""})
-                    summary = generate_thesis_points(pdf_text)
-                    return jsonify({
-                        "summary": summary,
-                        "text": pdf_text[:1000] + "..." if len(pdf_text) > 1000 else pdf_text
-                    })
-                except Exception as e:
-                    print(f"Error extracting or summarizing PDF: {e}")
-                    return jsonify({"error": "Failed to extract or summarize PDF"}), 500
-            else:
-                return jsonify({"error": "PDF download failed"}), 500
+        if uni and uni == "AALTO":
+            print("The code goes to AALTO UNIVERSITY")
+            abstract_text = get_aalto_abstract(thesis_id)
+            print(f"Extracted Aalto abstract ({len(abstract_text)} chars): {abstract_text[:200]}...")
+            summary = generate_thesis_points(abstract_text)
+            if not summary:
+                summary = "• No meaningful abstract content found."
+            return jsonify({
+                "summary": summary,
+                "text": ""
+            })
         else:
-            return jsonify({"error": "Retrieve mode not supported"}), 400
+            try:
+                if not key.startswith('http'):
+                    if key.startswith('/handle/'):
+                        full_url = 'https://www.theseus.fi' + key
+                    else:
+                        key = '/handle/' + key.lstrip('/').replace('#', '')
+                        full_url = 'https://www.theseus.fi' + key
+                else:
+                    full_url = key
+                print("DOWNLOADING FILE FROM:", full_url)
+            except Exception as url_error:
+                print(f"Error constructing URL: {url_error}")
+                return jsonify({"error": f"Invalid thesis identifier format: {key}"}), 400
+            # Periodic cleanup of temp files
+            if hash(key) % 100 < 5:
+                cleanup_temp_files()
+            if retrieve.lower() == "false":
+                temp_file_path = download_file(full_url)
+                if temp_file_path:
+                    try:
+                        print(f"SUCCESS: Downloaded PDF to {temp_file_path}")
+                        print(f"File size: {os.path.getsize(temp_file_path)} bytes")
+                        pdf_text = extract_text_from_pdf(temp_file_path)
+                        if not pdf_text:
+                            print("ERROR: No text extracted from the PDF.")
+                            backup_summary = "• No text could be extracted from the PDF. Try a different thesis."
+                            return jsonify({"summary": backup_summary, "text": ""})
+                        # Send all pdf 
+                        abstract_text = extract_abstract_content(pdf_text)
+                        print(f"EXTRACTED ABSTRACT ({len(abstract_text)} chars):")
+                        print(abstract_text[:500] + '...' if len(abstract_text) > 500 else abstract_text)
+                        summary = generate_thesis_points(abstract_text)
+                        return jsonify({
+                            "summary": summary,
+                            "text": pdf_text[:1000] + "..." if len(pdf_text) > 1000 else pdf_text
+                        })
+                    except Exception as e:
+                        print(f"Error extracting or summarizing PDF: {e}")
+                        return jsonify({"error": "Failed to extract or summarize PDF"}), 500
+                else:
+                    return jsonify({"error": "PDF download failed"}), 500
+            else:
+                return jsonify({"error": "Retrieve mode not supported"}), 400
     except Exception as e:
         print(f"Exception in /download: {e}")
         return jsonify({"error": str(e)}), 500

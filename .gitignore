@@ -12,6 +12,7 @@ web-build/
 .env
 backend/files/
 .venv/
+.github/
 
 # macOS
 .DS_Store
