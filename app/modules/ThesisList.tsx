@@ -4,6 +4,7 @@ import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
 import { Hoverable } from "react-native-web-hover";
+import { config } from "../config";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
@@ -34,8 +35,12 @@ const uniCodes = [
   {"uni":  "Vaasa", "code": "10024%2F1660"},
   {"uni": "Yrkeshögskolan Arcada", "code": "10024%2F4"},
   {"uni":  "Yrkeshögskolan Novia", "code": "10024%2F2188"},
+  {"uni": "Aalto", "code": "AALTO"},
 ];
 
+const API_BASE_URL = config.API_BASE_URL;
+// number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
+const RPP = 10; 
 const linkStart = "discover?scope=";
 const linkEnd = "&query=+nokia&rpp=100";
 
@@ -95,16 +100,20 @@ export default function ThesisList() {
           // Fetch from each university with increased results per page
           const allPromises = majorUniCodes.map(async (uniCode) => {
             try {
-              const uniResponse = await fetch(`http://localhost:3000/uni/${uniCode}?query=nokia&rpp=100`);
+              const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=10`);
               if (uniResponse.ok) {
                 const uniData = await uniResponse.json();
                 
                 // Add university information to theses that are missing it
                 const uniInfo = uniCodes.find(u => u.code === uniCode);
-                return uniData.map(thesis => ({
+                //  
+                const enhancedUniData = uniData.map(thesis => ({
                   ...thesis,
+                  universityCodeStr: uniCode,
                   _universityName: uniInfo ? uniInfo.uni : null  // Store original university name
                 }));
+                console.log("enhancedUniData", enhancedUniData);
+                return enhancedUniData;
               }
               return [];
             } catch (error) {
@@ -122,7 +131,7 @@ export default function ThesisList() {
           console.log(`Combined ${fetchedData.length} Nokia-related thesis items from multiple universities`);
         } else {
           // For a specific university, proceed with the existing endpoint but with increased results
-          const endpoint = `http://localhost:3000/uni/${searchedUni}?query=nokia&rpp=100`;
+          const endpoint = `${API_BASE_URL}/uni/${searchedUni}?query=nokia&rpp=${RPP}`;
           
           console.log(`Using endpoint: ${endpoint}`);
           const response = await fetch(endpoint);
@@ -136,6 +145,7 @@ export default function ThesisList() {
           }
           
           fetchedData = await response.json();
+          console.log('fetched data: ', fetchedData);
           
           // Add university information
           const uniInfo = uniCodes.find(u => u.code === searchedUni);
@@ -338,6 +348,8 @@ export default function ThesisList() {
             const title = String(item?.thesis?.title || item?.title || "Untitled Thesis");
             const author = String(item?.thesis?.author || item?.author || "Unknown Author");
             const year = String(item?.thesis?.year || item?.year || item?.thesis?.date || item?.date || "Unknown Date");
+            const universityCode = String(item?.thesis?.universityCode || item?.universityCode || "unknown university code");
+            const thesisId = String(item?.thesis?.thesisId || item?.thesisId || `unknown-id`);
             
             // Enhanced publisher extraction with multiple fallbacks
             // First check if university name is stored directly (from our data enhancement)
@@ -389,10 +401,12 @@ export default function ThesisList() {
                   pathname: "/modules/SingleThesis",
                   params: { 
                     handle: getValidHandle(item), 
+                    thesisId,
                     title, 
                     author, 
                     year, 
-                    publisher
+                    publisher,
+                    universityCode,
                   }
                 }}
               >

@@ -4,10 +4,12 @@ import QRCode from 'react-native-qrcode-svg';
 
 interface ThesisQRCodeProps {
   handle: string;
+  universityCode: string;
   size?: number;
 }
 
-export const ThesisQRCode = ({ handle, size = 150 }: ThesisQRCodeProps) => {
+export const ThesisQRCode = ({ handle, universityCode, size = 150 }: ThesisQRCodeProps & { universityCode?: string }) => {
+  console.log(handle, universityCode);
   // Format the handle into a proper URL for the QR code
   const getThesisUrl = (handle: string) => {
     // Return empty string if handle is empty
@@ -20,14 +22,18 @@ export const ThesisQRCode = ({ handle, size = 150 }: ThesisQRCodeProps) => {
     
     // Remove any hash characters that might be present
     const cleanHandle = handle.replace(/^#/, '');
-    
-    // If it's a handle with /handle/ prefix, use it
-    if (cleanHandle.startsWith('/handle/')) {
-      return `https://www.theseus.fi${cleanHandle}`;
+    if (universityCode === 'AALTO') {
+      // Aalto theses use a different URL structure
+      return `https://aaltodoc.aalto.fi${cleanHandle}`;
+    } else {  
+      // If it's a handle with /handle/ prefix, use it
+      if (cleanHandle.startsWith('/handle/')) {
+        return `https://www.theseus.fi${cleanHandle}`;
+      }
+      
+      // If it's just the handle ID, add the proper prefix
+      return `https://www.theseus.fi/handle/${cleanHandle}`;
     }
-    
-    // If it's just the handle ID, add the proper prefix
-    return `https://www.theseus.fi/handle/${cleanHandle}`;
   };
   
   const thesisUrl = getThesisUrl(handle);

@@ -7,8 +7,8 @@ import { getThesisSummary, API_BASE_URL, setApiBaseUrl, getTestSummaryDirect } f
 
 export default function SingleThesis() {
   const params = useLocalSearchParams();
-  const { handle, title, author, year, publisher } = params;
-
+  const { handle, thesisId, title, author, year, publisher, universityCode  } = params;
+  console.log(universityCode, thesisId);
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -44,6 +44,7 @@ export default function SingleThesis() {
     }
   }, [handle]);
 
+
   // Improve the fetchThesisSummary function to handle various server configurations
   const fetchThesisSummary = async (forceRetry = false) => {
     if (!handle) {
@@ -57,7 +58,7 @@ export default function SingleThesis() {
     setSummaryError(null);
 
     try {
-      console.log(`Fetching summary for handle: ${formattedHandle} (Attempt: ${retryCount + 1})`);
+      console.log(`Fetching summary for university: ${universityCode}, handle: ${formattedHandle}, thesisId: ${thesisId} (Attempt: ${retryCount + 1})`);
 
       // Try to verify backend availability first
       let pingFailed = false;
@@ -79,7 +80,7 @@ export default function SingleThesis() {
       }
 
       // Use getThesisSummary from api.ts instead of direct fetch
-      const data = await getThesisSummary(handleKey);
+      const data = await getThesisSummary(handleKey, universityCode as string, thesisId as string | undefined);
 
       if (data && data.summary) {
         // Ensure summary is a string and log more details
@@ -292,7 +293,7 @@ export default function SingleThesis() {
       {/* QR Code Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Access this thesis</Text>
-        <ThesisQRCode handle={String(handle)} size={200} />
+        <ThesisQRCode handle={String(handle)} universityCode={String(universityCode)} size={200} />
       </View>
     </ScrollView>
   );

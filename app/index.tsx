@@ -2,6 +2,8 @@ import { Text, View, StyleSheet, Image, ScrollView } from "react-native";
 import { Link } from "expo-router";
 import { useState, useEffect } from "react";
 import Chatbot, { ChatbotButton } from "./components/Chatbot";
+import { config } from "./config";
+
 
 export default function Index() {
   const [thesisCount, setThesisCount] = useState<number | null>(null);
@@ -12,7 +14,7 @@ export default function Index() {
   useEffect(() => {
     const fetchThesisCount = async () => {
       try {
-        const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=100");
+        const response = await fetch(`${config.API_BASE_URL}/uni/10024%2F6?query=nokia&rpp=100`);
         if (!response.ok) {
           throw new Error(`Failed to fetch theses: ${response.status}`);
         }
@@ -28,7 +30,7 @@ export default function Index() {
 
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/admin/dashboard");
+        const response = await fetch(`${config.API_BASE_URL}/api/admin/dashboard`);
         if (!response.ok) {
           throw new Error(`Failed to fetch dashboard data: ${response.status}`);
         }

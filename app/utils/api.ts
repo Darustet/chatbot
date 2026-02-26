@@ -169,7 +169,7 @@ export async function checkBackendStatus() {
 export async function fetchFromApi(endpoint: string, options = {}) {
   try {
     const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-    console.log(`Fetching from: ${url}`);
+    console.log(`From api.ts: Fetching from: ${url}`);
     
     // Add robust timeout handling
     const controller = new AbortController();
@@ -192,8 +192,9 @@ export async function fetchFromApi(endpoint: string, options = {}) {
       const errorText = await response.text();
       throw new Error(`Server responded with ${response.status}: ${errorText}`);
     }
-    
-    return await response.json();
+    const data = await response.json(); 
+    console.log('from api.ts, response.json: ', data);
+    return data;
   } catch (error) {
     console.error(`API error (${endpoint}):`, error);
     
@@ -209,7 +210,7 @@ export async function fetchFromApi(endpoint: string, options = {}) {
 /**
  * Get a thesis summary with enhanced error handling and debugging
  */
-export async function getThesisSummary(handle: string) {
+export async function getThesisSummary(handle: string, universityCode: string, thesisId?: string) {
   // Check if handle is valid
   if (!handle || handle === 'undefined' || handle === 'null') {
     throw new Error('Invalid thesis handle');
@@ -218,7 +219,7 @@ export async function getThesisSummary(handle: string) {
   console.log(`Making thesis summary request for: ${handle}`);
   
   try {
-    console.log(`Making thesis summary request to ${API_BASE_URL} for handle: ${handle}`);
+    console.log(`Making thesis summary request to ${API_BASE_URL} for university: ${universityCode}, handle: ${handle}, thesisId: ${thesisId}`);
     
     // Add timeout to prevent the request from hanging
     const controller = new AbortController();
@@ -230,7 +231,7 @@ export async function getThesisSummary(handle: string) {
     // Don't automatically fall back to test endpoint - this masks real errors
     // and can make all summaries look the same
     const data = await fetchFromApi(
-      `download?key=${encodeURIComponent(handle)}&${debugQuery}`, 
+      `download?key=${encodeURIComponent(handle)}&uni=${encodeURIComponent(universityCode)}&thesisId=${encodeURIComponent(thesisId || '')}&${debugQuery}`, 
       { signal: controller.signal }
     );
     
