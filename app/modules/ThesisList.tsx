@@ -39,6 +39,8 @@ const uniCodes = [
 ];
 
 const API_BASE_URL = config.API_BASE_URL;
+// number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
+const RPP = 10; 
 const linkStart = "discover?scope=";
 const linkEnd = "&query=+nokia&rpp=100";
 
@@ -129,7 +131,7 @@ export default function ThesisList() {
           console.log(`Combined ${fetchedData.length} Nokia-related thesis items from multiple universities`);
         } else {
           // For a specific university, proceed with the existing endpoint but with increased results
-          const endpoint = `${API_BASE_URL}/uni/${searchedUni}?query=nokia&rpp=10`;
+          const endpoint = `${API_BASE_URL}/uni/${searchedUni}?query=nokia&rpp=${RPP}`;
           
           console.log(`Using endpoint: ${endpoint}`);
           const response = await fetch(endpoint);

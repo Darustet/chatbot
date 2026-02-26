@@ -237,13 +237,14 @@ def extract_abstract_content(text):
     print(f"Extracted abstract ({len(abstract_text)} chars): {abstract_text[:200]}...")
     return abstract_text
 
+# For Aalto theses, use the API to get the abstract text directly, as it is often more reliable than PDF extraction.
 def get_aalto_abstract(thesis_id):
     api_url = f"{AALTO_BASE_URL}/server/api/core/items/{thesis_id}"
     print(f"fetch data from {api_url}")
     response = requests.get(api_url)
     response.raise_for_status()
     data = response.json()
-    print(f"data: {data.get('metadata', {}).get('dc.description.abstract', [])}")
+    print(f"data: {data.get('metadata', {}).get('dc.description.abstract', [])[:2]}...")
     # Get abstract from metadata
     abstracts = data.get('metadata', {}).get('dc.description.abstract', [])
     # If abstract is found in english, take that, otherwise take Finnish version, if it is available
@@ -419,7 +420,6 @@ def download():
         print("UNIVERSITY CODE:", uni)
         retrieve = request.args.get('retrieve', default="false", type=str)
         if uni and uni == "AALTO":
-            print("The code goes to AALTO UNIVERSITY")
             abstract_text = get_aalto_abstract(thesis_id)
             print(f"Extracted Aalto abstract ({len(abstract_text)} chars): {abstract_text[:200]}...")
             summary = generate_thesis_points(abstract_text)

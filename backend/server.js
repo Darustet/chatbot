@@ -3,18 +3,12 @@ import express from "express";
 import * as cheerio from "cheerio";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
+import { getProvider } from "./providers/index.js";
 
 const app = express();
 
 // Add JSON body parser middleware
 app.use(express.json());
-
-// Link for theseus.fi
-const baseLink = "https://www.theseus.fi/";
-const link = "https://www.theseus.fi/discover?scope=10024%2F6&query=+nokia&rpp=30";
-const aaltoApiBase = "https://aaltodoc.aalto.fi/server/api";
-const aaltoBachelorEndpoint = "4e50a35c-f00f-49ae-93b2-3223353681ec"; // size=20 is the default
-const aaltoMasterEndpoint = "663a76cb-af53-4943-a224-19e055302c24";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
@@ -36,6 +30,9 @@ const uniCodes = [
   {"uni": "Aalto", "code": "AALTO"}
 ];
 
+const validUniCodes = uniCodes.map(u => u.code);
+console.log('validUnicodes: ', validUniCodes);
+
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS");
@@ -50,41 +47,29 @@ app.use(function(req, res, next) {
 });
 
 app.get("/uni/:uni", async (req, res) => {
-    const test = req.params.uni;
+    const uniCode = req.params.uni;
     const query = String(req.query.query || "nokia");
     // Results per page, capped at 100, default 30
-    console.log('rpp la: ', req.query.rpp);
     const rpp = Math.min(parseInt(String(req.query.rpp || "30"), 10) || 30, 100);
-    console.log('rpp la: ', rpp);
+    console.log('rpp: ', rpp);
     // Minimum year filter, default 2023
     const yearMin = parseInt(String(req.query.yearMin || "2023"), 10) || 2023;
     // Current year for filtering
     const d = new Date();
     const yearNow = d.getFullYear();
     
-    console.log(`Received request for university: ${test} (query=${query}, rpp=${rpp}, yearMin=${yearMin})`);
+    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp} yearMin=${yearMin}, yearNow=${yearNow})`);
+    console.log(`yearMin: ${yearMin}, yearNow: ${yearNow}`);
 
+    // Build context for provider functions
+    const context = { uniCode, query, rpp, yearMin, yearNow, uniCodes };
+    const provider = getProvider(uniCode);
+    const isKnownUni = validUniCodes.includes(encodeURIComponent(uniCode));
+    if (!isKnownUni) {
+        return res.status(400).json({ error: `Unknown university code: ${uniCode}` });
+    }
     try {
-        // Build the proper URL for theseus.fi / Aalto
-        const encodedQuery = encodeURIComponent(query);
-        let fetchUrl;
-        
-        if (test === "AALTO") {
-            // Aalto DSpace API with date filtering in the URL
-            // encode date issued filter
-            const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
-
-            // Use bachelor endpoint for now
-            fetchUrl = `${aaltoApiBase}/discover/search/objects?scope=${aaltoBachelorEndpoint}&query=${encodedQuery}&configuration=default&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
-            console.log("fetchUrl: ", fetchUrl);
-        } else if (test === "all") {
-            fetchUrl = `${baseLink}discover?scope=10024%2F6&query=+${encodedQuery}&rpp=${rpp}`;
-        } else {
-            fetchUrl = `${baseLink}discover?scope=${test}&query=+${encodedQuery}&rpp=${rpp}`;
-        }
-        
-        console.log("Fetching from:", fetchUrl);
-        // Fetch the HTML
+        const fetchUrl = provider.buildUrl(context);
         const response = await axios.get(fetchUrl, { 
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -92,164 +77,20 @@ app.get("/uni/:uni", async (req, res) => {
             timeout: 15000 
         });
         console.log("Response status:", response.status);
-        
-        // Parse the HTML
-        const $ = cheerio.load(response.data);
-        console.log("HTML loaded, searching for thesis data...");
-        const thesesData = [];
 
-        if (req.params.uni === "AALTO") {
-            // Aalto DSpace API response parsing           
-            // Extract data from each object
-            const objects = response.data._embedded.searchResult._embedded.objects;
-            objects.forEach((obj, index) => {
-                try {
-                    const item = obj._embedded.indexableObject;
-                    const thesisId = item.id || `unknown-id-${index}`;
-                    const title = item.name || "No Title";
-                    const handle = item.handle ? `/handle/${item.handle}` : "";
-                    const authorArr = item.metadata['dc.contributor.author'] || [];
-                    const author = authorArr.length > 0 ? authorArr[0].value : "Unknown Author";
-                    const dateIssuedArr = item.metadata['dc.date.issued'] || [];
-                    const year = dateIssuedArr.length > 0 ? dateIssuedArr[0].value : "Unknown Date";
-                    const publisherArr = item.metadata['dc.contributor'] || [];
-                    let publisher = "Unknown University";
-                    const universityCode = "AALTO";
-                    if (publisherArr.length > 0) {
-                        // Try to find English name first
-                        const engPub = publisherArr.find(p => p.language === 'en');
-                        if (engPub) {
-                            publisher = engPub.value;
-                        } else {
-                            publisher = publisherArr[0].value;
-                        }
-                    }
-                    // Add thesis to the list
-                    thesesData.push({
-                        handle,
-                        thesis: {
-                            thesisId,
-                            title,
-                            author,
-                            year,
-                            publisher,
-                            universityCode: universityCode
-                        }
-                    });
-                    console.log(`Added Aalto thesis #${thesesData.length}: "${title}" by "${author}" from "${publisher}"`);
-                } catch (error) {
-                    console.error(`Error parsing Aalto thesis item ${index}:`, error);
-                }
-            });
-        } else {
-            // Improved extraction logic
-            $('.artifact-description').each((index, element) => {
-                try {
-                    // Extract title
-                    const title = $(element).find('h4').text().trim();
-                    
-                    // Extract handle/URL
-                    const handle = $(element).find('a').first().attr('href') || "";
-                    
-                    // Extract author
-                    let author = "";
-                    const authorElem = $(element).find('.author, span:contains("Author")');
-                    if (authorElem.length) {
-                        author = authorElem.text().replace(/Author:?\s*/i, '').trim();
-                    } else {
-                        const text = $(element).text();
-                        const authorMatch = text.match(/Author:\s*([^,;\n]+)/i);
-                        if (authorMatch && authorMatch[1]) {
-                            author = authorMatch[1].trim();
-                        }
-                    }
-                    
-                    // Extract university/publisher
-                    let publisher = "";
-                    const publisherElem = $(element).find('.publisher, span:contains("Publisher")');
-                    if (publisherElem.length) {
-                        publisher = publisherElem.text().replace(/Publisher:?\s*/i, '').trim();
-                    } else {
-                        const text = $(element).text();
-                        const publisherMatch = text.match(/Publisher:\s*([^,;\n]+)/i);
-                        if (publisherMatch && publisherMatch[1]) {
-                            publisher = publisherMatch[1].trim();
-                        } else {
-                            // Fallback: Use the university code to map to a university name
-                            if (test === "all") {
-                                // For "all" case, publisher might be detected elsewhere in the element
-                                const fullText = $(element).text();
-                                for (const uniData of uniCodes) {
-                                    if (fullText.includes(uniData.uni)) {
-                                        publisher = uniData.uni;
-                                        break;
-                                    }
-                                }
-                            } else {
-                                // For specific university code
-                                const uniMatch = uniCodes.find(u => u.code === test);
-                                if (uniMatch) {
-                                    publisher = uniMatch.uni;
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Extract year
-                    let year = "";
-                    const yearElem = $(element).find('.date, span:contains("Date")');
-                    if (yearElem.length) {
-                        year = yearElem.text().replace(/Date:?\s*/i, '').trim();
-                    } else {
-                        const text = $(element).text();
-                        const yearMatch = text.match(/\b(19|20)\d{2}\b/);
-                        if (yearMatch) {
-                            year = yearMatch[0];
-                        }
-                    }
-                    
-                    // Add thesis if we have a title
-                    if (title) {
-                        thesesData.push({
-                            handle,
-                            thesis: {
-                                title,
-                                author: author || "Unknown Author",
-                                year: year || "Unknown Date",
-                                publisher: publisher || "Unknown University",
-                                universityCode: test
-                            }
-                        });
-                        console.log(`Added thesis #${thesesData.length}: "${title}" by "${author}" from "${publisher}"`);
-                    }
-                } catch (error) {
-                    console.error(`Error parsing thesis item ${index}:`, error);
-                }
-            });
+        const parsed = provider.parse(response);
+        const normalized = provider.normalize(parsed, { ...context});
+
+        const filtered = normalized.filter(t => parseInt(t.thesis.year, 10) > 2022);
+        if (filtered.length === 0) {
+            console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
+            return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
         }
-        
-        
-        console.log(`Found ${thesesData.length} real theses from theseus.fi`);
-        
-        // Filter theses to include only those published after 2022
-        const filteredThesesData = thesesData.filter(thesis => {
-            const year = parseInt(thesis.thesis.year, 10);
-            return year > 2022;
-        });
-        
-        console.log(`Filtered theses to include only those published after 2022: ${filteredThesesData.length} theses`);
-        
-        // Return filtered data or error
-        if (filteredThesesData.length > 0) {
-            console.log(`Sending ${filteredThesesData.length} theses to client`);
-            return res.json(filteredThesesData);
-        } else {
-            console.error("No thesis data found for the selected university after filtering by year");
-            return res.status(404).json({ error: "No thesis data found for the selected university after filtering by year" });
-        }
+        console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
+        return res.json(filtered);
     } catch (error) {
-        console.error("Error fetching from theseus.fi:", error);
-        return res.status(500).json({ error: "Failed to fetch data from theseus.fi" });
+        console.error(`Error fetching or processing data for university ${uniCode}:`, error);
+        return res.status(500).json({ error: `Failed to fetch or process data for university ${uniCode}` });
     }
 });
 
