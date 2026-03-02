@@ -30,7 +30,6 @@ def get_aalto_abstract(thesis_id):
         response = requests.get(api_url, timeout=15)
         response.raise_for_status()
         data = response.json()
-        print(f"data: {data.get('metadata', {}).get('dc.description.abstract', [])[:2]}...")
         # Get abstract from metadata
         abstracts = data.get('metadata', {}).get('dc.description.abstract', [])
         # If abstract is found in english, take that, otherwise take Finnish version, if it is available
