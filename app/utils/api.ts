@@ -231,7 +231,7 @@ export async function getThesisSummary(handle: string, universityCode: string, t
     // Don't automatically fall back to test endpoint - this masks real errors
     // and can make all summaries look the same
     const data = await fetchFromApi(
-      `download?key=${encodeURIComponent(handle)}&uni=${encodeURIComponent(universityCode)}&thesisId=${encodeURIComponent(thesisId || '')}&${debugQuery}`, 
+      `summary?key=${encodeURIComponent(handle)}&uni=${encodeURIComponent(universityCode)}&thesisId=${encodeURIComponent(thesisId || '')}&${debugQuery}`, 
       { signal: controller.signal }
     );
     

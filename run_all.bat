@@ -12,8 +12,8 @@ REM -------------------------
 REM Start Python service
 REM -------------------------
 echo.
-echo Starting Python download service...
-start "Python Service" cmd /k "cd /d "%~dp0backend\download-script" && call .venv\Scripts\activate.bat && python downloads.py"
+echo Starting Python summary service...
+start "Python Service" cmd /k "cd /d "%~dp0backend\summary-script" && call .venv\Scripts\activate.bat && python app.py"
 
 REM -------------------------
 REM Start Node backend

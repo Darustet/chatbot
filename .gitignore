@@ -13,6 +13,9 @@ web-build/
 backend/files/
 .venv/
 .github/
+__pycache__/
+*.pyc
+*.pyo
 
 # macOS
 .DS_Store
