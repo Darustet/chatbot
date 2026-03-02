@@ -39,7 +39,7 @@ REM Setup Python environment
 REM -------------------------
 echo.
 echo Setting up Python environment...
-cd backend\download-script
+cd backend\summary-script
 
 if not exist .venv (
     py -3.11 -m venv .venv
