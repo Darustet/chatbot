@@ -41,6 +41,9 @@ def summary() -> dict:
         
         # Get appropriate provider and call summarize
         provider = get_provider(uni)
+        if not provider:
+            return jsonify({"error": f"Unsupported university code: {uni}"}), 400
+        
         result = provider.summarize(identifier)
         
         # Handle error responses
