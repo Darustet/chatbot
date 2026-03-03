@@ -36,6 +36,7 @@ const uniCodes = [
   {"uni": "Yrkeshögskolan Arcada", "code": "10024%2F4"},
   {"uni":  "Yrkeshögskolan Novia", "code": "10024%2F2188"},
   {"uni": "Aalto", "code": "AALTO"},
+  {"uni": "Helsinki", "code": "HELDA"},
 ];
 
 const API_BASE_URL = config.API_BASE_URL;

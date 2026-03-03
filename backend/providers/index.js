@@ -1,5 +1,6 @@
 import { AaltoProvider } from "./aalto.js";
 import { TheseusProvider } from "./theseus.js";
+import { HeldaProvider } from "./helda.js";
 
 /**
  * Provider map to associate university codes with their respective providers.
@@ -12,6 +13,7 @@ import { TheseusProvider } from "./theseus.js";
  */
 export const providerMap = {
   AALTO: AaltoProvider,
+  HELDA: HeldaProvider,
 };
 
 export function getProvider(uniCode) {

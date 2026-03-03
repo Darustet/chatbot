@@ -27,7 +27,8 @@ const uniCodes = [
   {"uni": "Lapin", "code": "10024%2F69720"},
   {"uni": "Laurea", "code": "10024%2F12"},
   {"uni": "Metropolia", "code": "10024%2F6"},
-  {"uni": "Aalto", "code": "AALTO"}
+  {"uni": "Aalto", "code": "AALTO"},
+  {"uni": "Helsinki", "code": "HELDA"},
 ];
 
 const validUniCodes = uniCodes.map(u => u.code);
