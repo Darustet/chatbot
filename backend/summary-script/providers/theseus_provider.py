@@ -256,14 +256,15 @@ def summarize(thesis_key):
         # Download PDF
         temp_file_path = download_file(full_url)
         if not temp_file_path:
-            return {"error": "PDF download failed"}
+            return {"error": "PDF download failed",
+                    "message": "Could not download the PDF. Try a different thesis or check the link." }
         
         # Extract text
         pdf_text = extract_text_from_pdf(temp_file_path)
         if not pdf_text:
             return {
                 "error": "No text extracted",
-                "summary": "• No text could be extracted from the PDF. Try a different thesis."
+                "message": "• No text could be extracted from the PDF. Try a different thesis."
             }
         
         # Extract abstract
@@ -276,9 +277,9 @@ def summarize(thesis_key):
         
         return {
             "summary": summary,
-            "text": pdf_text[:1000] + "..." if len(pdf_text) > 1000 else pdf_text
+            "text": pdf_text[:1000] + "..." if len(pdf_text) > 1000 else pdf_text,
         }
     except Exception as e:
         print(f"Error in theseus_provider.summarize: {e}")
-        return {"error": str(e)}
+        return {"error": str(e), "message": "An error occurred while summarizing the thesis."}
 

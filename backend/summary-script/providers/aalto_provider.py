@@ -72,9 +72,7 @@ def summarize(thesis_id):
             if access_status == "restricted":
                 return {
                     "summary": "• This thesis is restricted and not publicly available online.\n• Aalto API reports access status as restricted.\n• Because abstract access is limited, an automatic summary cannot be generated.",
-                    "text": "",
-                    "status": "unavailable",
-                    "reason": "restricted_access"
+                    "text": ""
                 }
 
             return {

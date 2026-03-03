@@ -15,7 +15,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 # - uni: University code (AALTO, THESEUS, etc.)
 # - thesisId: For AALTO (DSpace item ID)
 # - key: For THESEUS (handle or URL)
-def summary():
+def summary() -> dict:
     try:
         print("\n====== NEW SUMMARY REQUEST ======")
         print("REQUEST ARGS:", request.args)
