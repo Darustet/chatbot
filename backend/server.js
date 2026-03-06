@@ -27,9 +27,22 @@ const uniCodes = [
   {"uni": "Lapin", "code": "10024%2F69720"},
   {"uni": "Laurea", "code": "10024%2F12"},
   {"uni": "Metropolia", "code": "10024%2F6"},
+  {"uni": "Mikkelin", "code": "10024%2F2074"},
+  {"uni": "Oulu", "code": "10024%2F2124"},
+  {"uni": "Poliisi", "code": "10024%2F86551"},
+  {"uni": "Saimaan", "code": "10024%2F1567"},
+  {"uni": "Satakunnan", "code": "10024%2F14"},
+  {"uni": "Savonia", "code": "10024%2F1476"},
+  {"uni": "Seinäjoen", "code": "10024%2F1"},
+  {"uni": "Tampere", "code": "10024%2F13"},
+  {"uni": "Turun", "code": "10024%2F15"},
+  {"uni":  "Vaasa", "code": "10024%2F1660"},
+  {"uni": "Yrkeshögskolan Arcada", "code": "10024%2F4"},
+  {"uni":  "Yrkeshögskolan Novia", "code": "10024%2F2188"},
   {"uni": "Aalto", "code": "AALTO"},
   {"uni": "Helsinki", "code": "HELDA"},
 ];
+
 
 const validUniCodes = uniCodes.map(u => u.code);
 console.log('validUnicodes: ', validUniCodes);

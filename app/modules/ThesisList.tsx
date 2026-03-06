@@ -94,14 +94,13 @@ export default function ThesisList() {
             "10024%2F13",   // Tampere
             "10024%2F15",   // Turku
             "10024%2F14",   // Satakunnan
-            "10024%2F13",   // Tampere
             "10024%2F12"    // Laurea
           ];
           
           // Fetch from each university with increased results per page
           const allPromises = majorUniCodes.map(async (uniCode) => {
             try {
-              const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=10`);
+              const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=50`);
               if (uniResponse.ok) {
                 const uniData = await uniResponse.json();
                 
@@ -128,6 +127,7 @@ export default function ThesisList() {
           
           // Combine all results
           fetchedData = results.flat();
+          console.log("fetchedData", fetchedData);
           
           console.log(`Combined ${fetchedData.length} Nokia-related thesis items from multiple universities`);
         } else {
@@ -178,7 +178,7 @@ export default function ThesisList() {
             const description = (thesis?.thesis?.description || thesis?.description || "").toLowerCase();
             const abstract = (thesis?.thesis?.abstract || thesis?.abstract || "").toLowerCase();
             const subject = (thesis?.thesis?.subject || thesis?.subject || "").toLowerCase();
-            
+
             // Calculate Nokia relevance score
             let nokiaScore = 0;
             
