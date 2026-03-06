@@ -3,7 +3,6 @@ import { normalizeThesis } from "./types.js";
 
 const TREPO_BASE = "https://trepo.tuni.fi/";
 
-
 export const TrepoProvider = {
   // Build the API URL based on the query and filters
   buildUrl({ query, rpp, uniCode }) {

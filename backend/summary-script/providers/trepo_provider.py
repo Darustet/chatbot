@@ -34,7 +34,6 @@ def _extract_handle_id(value: str) -> str | None:
     if m:
         return m.group(1)
 
-    # /bitstream/handle/10024/232771/...
     m = re.search(r"/bitstream/handle/(\d+/\d+)/", value)
     if m:
         return m.group(1)
