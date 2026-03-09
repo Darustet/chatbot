@@ -29,6 +29,8 @@ const uniCodes = [
   {"uni": "Metropolia", "code": "10024%2F6"},
   {"uni": "Aalto", "code": "AALTO"},
   {"uni": "Helsinki", "code": "HELDA"},
+  {"uni": "Tampere university", "code": "TREPO"},
+  
 ];
 
 const validUniCodes = uniCodes.map(u => u.code);
