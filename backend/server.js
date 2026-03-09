@@ -72,8 +72,7 @@ app.get("/uni/:uni", async (req, res) => {
     const d = new Date();
     const yearNow = d.getFullYear();
     
-    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp} yearMin=${yearMin}, yearNow=${yearNow})`);
-    console.log(`yearMin: ${yearMin}, yearNow: ${yearNow}`);
+    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearNow=${yearNow})`);
 
     // Build context for provider functions
     const context = { uniCode, query, rpp, yearMin, yearNow, uniCodes };
@@ -84,6 +83,7 @@ app.get("/uni/:uni", async (req, res) => {
     }
     try {
         const fetchUrl = provider.buildUrl(context);
+        console.log(`Fetching data from URL: ${fetchUrl}`);
         const response = await axios.get(fetchUrl, { 
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
