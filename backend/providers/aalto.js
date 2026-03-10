@@ -37,6 +37,24 @@ export const AaltoProvider = {
       if (englishPub) publisher = englishPub.value;
       else if (publisherArr[0]?.value) publisher = publisherArr[0].value;
 
+      const abstracts = item.metadata?.["dc.description.abstract"];
+      
+      const toAbstractByLanguage = (abstracts) => {
+        if (!Array.isArray(abstracts)) return {};
+
+        const byLanguage = {};
+        for (const abs of abstracts) {
+          const lang = String(abs.language || "unknown").toLowerCase();
+          const text = String(abs.value || "").trim();
+          if (text) {
+            byLanguage[lang] = text;
+          }
+        }
+        return byLanguage;
+      };
+
+      const abstractByLanguage = toAbstractByLanguage(abstracts);
+
       return normalizeThesis({
         handle,
         thesisId,
@@ -44,7 +62,8 @@ export const AaltoProvider = {
         author,
         year,
         publisher,
-        universityCode: "AALTO"
+        universityCode: "AALTO",
+        abstractByLanguage
       });
     });
   }

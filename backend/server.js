@@ -101,6 +101,7 @@ app.get("/uni/:uni", async (req, res) => {
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
         }
         console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
+        console.log("First thesis in response:", filtered[0]);
         return res.json(filtered);
     } catch (error) {
         console.error(`Error fetching or processing data for university ${uniCode}:`, error);

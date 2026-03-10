@@ -353,7 +353,7 @@ export default function ThesisList() {
             numColumns={3}
             keyExtractor={(item, index) => index.toString()}
             renderItem={({ item }: { item: any }) => {
-              console.log("Rendering thesis item:", item);
+              // console.log("Rendering thesis item:", item);
               
               // Enhanced string extraction with improved fallbacks
               const title = String(item?.thesis?.title || item?.title || "Untitled Thesis");
@@ -393,7 +393,7 @@ export default function ThesisList() {
               }
               
               // Debug log showing where we got the university name from
-              console.log(`University for "${title}": ${publisher} (Source: ${universitySource})`);
+              // console.log(`University for "${title}": ${publisher} (Source: ${universitySource})`);
               
               // Get Nokia relevance information
               const nokiaRelevance = item._nokiaRelevance || "low";
@@ -504,7 +504,7 @@ export const countMetropoliaNokiaTheses = async () => {
 
 export const countMetropoliaRelevantTheses = async () => {
   try {
-    const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=100");
+    const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=20");
     if (!response.ok) {
       throw new Error(`Failed to fetch theses: ${response.status}`);
     }
