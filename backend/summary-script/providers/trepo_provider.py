@@ -174,7 +174,7 @@ def summarize(thesis_key: str):
 
         return {
             "summary": summary,
-            "text": abstract_text,
+            "Abstract": abstract_text,
             "page_url": page_url,
         }
 
