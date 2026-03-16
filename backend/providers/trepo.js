@@ -2,12 +2,13 @@ import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
 
 const TREPO_BASE = "https://trepo.tuni.fi/";
+const TREPO_BACHELOR_SCOPE = "10024/105881"
 
 export const TrepoProvider = {
   // Build the API URL based on the query and filters
   buildUrl({ query, rpp, uniCode }) {
     const encodedQuery = encodeURIComponent(query);
-    return `${TREPO_BASE}discover?scope=${uniCode}&query=+${encodedQuery}&rpp=${rpp}`;
+    return `${TREPO_BASE}discover?scope=${TREPO_BACHELOR_SCOPE}&query=+${encodedQuery}&rpp=${rpp}`;
   },
 
   // Parse the API response to extract thesis elements
