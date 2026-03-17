@@ -4,6 +4,7 @@ import * as cheerio from "cheerio";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
+import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 
 const app = express();
 
@@ -63,7 +64,7 @@ app.use(function(req, res, next) {
 app.get("/uni/:uni", async (req, res) => {
     const uniCode = req.params.uni;
     const query = String(req.query.query || "nokia");
-    // Results per page, capped at 100, default 30
+    // Results per page, capped at 200, default 30
     const rpp = Math.min(parseInt(String(req.query.rpp || "30"), 10) || 30, 100);
     console.log('rpp: ', rpp);
     // Minimum year filter, default 2023
@@ -100,9 +101,18 @@ app.get("/uni/:uni", async (req, res) => {
             console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
         }
+
         console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
-        console.log("First thesis in response:", filtered[0]);
-        return res.json(filtered);
+        
+
+        const thesesWithScores = filtered.map(t => {
+            const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
+            return scoreData;
+        });
+
+        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b._nokiaScore - a._nokiaScore);
+
+        return res.json(thesesWithScoreSorted);
     } catch (error) {
         console.error(`Error fetching or processing data for university ${uniCode}:`, error);
         return res.status(500).json({ error: `Failed to fetch or process data for university ${uniCode}` });

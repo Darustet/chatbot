@@ -41,9 +41,7 @@ const uniCodes = [
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 50; 
-const linkStart = "discover?scope=";
-const linkEnd = "&query=+nokia&rpp=100";
+const RPP = 100; 
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
