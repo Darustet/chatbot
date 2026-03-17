@@ -41,7 +41,7 @@ const uniCodes = [
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 100; 
+const RPP = 50; 
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
@@ -87,13 +87,13 @@ export default function ThesisList() {
           // Select a few major universities to get a diverse set of theses
           const majorUniCodes = [
             "10024%2F6",    // Metropolia
-            // "10024%2F431",  // Haaga-Helia
+            "10024%2F431",  // Haaga-Helia
             // "10024%2F2124", // Oulu
             // "10024%2F13",   // Tampere
             // "10024%2F15",   // Turku
             // "10024%2F14",   // Satakunnan
             "10024%2F12",  // Laurea  
-            // "AALTO",           // Aalto University
+            "AALTO",           // Aalto University
           ];
           
           // Fetch from each university with increased results per page
