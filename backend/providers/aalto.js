@@ -21,10 +21,20 @@ const AALTO_MASTER_SCOPE = "663a76cb-af53-4943-a224-19e055302c24";
 
 export const AaltoProvider = {
   // Build the API URL based on the query and filters
-  buildUrl: function({ query, rpp, yearMin, yearNow }) {
+  // buildUrl: function({ query, rpp, yearMin, yearNow }) {
+  //   const encodedQuery = encodeURIComponent(query);
+  //   const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+  //   return `${AALTO_API_BASE}/discover/search/objects?scope=${AALTO_BACHELOR_SCOPE}&query=${encodedQuery}&configuration=default&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
+  // },
+
+  buildUrls: function({ query, rpp, yearMin, yearNow }) {
     const encodedQuery = encodeURIComponent(query);
     const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
-    return `${AALTO_API_BASE}/discover/search/objects?scope=${AALTO_BACHELOR_SCOPE}&query=${encodedQuery}&configuration=default&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
+
+    const bachelorUrl = `${AALTO_API_BASE}/discover/search/objects?scope=${AALTO_BACHELOR_SCOPE}&query=${encodedQuery}&configuration=default&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
+
+    const masterUrl = `${AALTO_API_BASE}/discover/search/objects?scope=${AALTO_MASTER_SCOPE}&query=${encodedQuery}&configuration=default&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
+    return  [ bachelorUrl, masterUrl ];
   },
 
   // Parse the API response to extract the relevant data

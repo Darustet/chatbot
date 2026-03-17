@@ -82,18 +82,33 @@ app.get("/uni/:uni", async (req, res) => {
     if (!isKnownUni) {
         return res.status(400).json({ error: `Unknown university code: ${uniCode}` });
     }
+    let parsed = [];
     try {
-        const fetchUrl = provider.buildUrl(context);
-        console.log(`Fetching data from URL: ${fetchUrl}`);
-        const response = await axios.get(fetchUrl, { 
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
-            timeout: 15000 
-        });
-        console.log("Response status:", response.status);
+        if (provider.buildUrls) {
+            const urls = provider.buildUrls(context);
+            console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
+            console.log(`Fetching data from Master URL: ${urls[1]}`);
+            const responses = await Promise.all(urls.map( url => axios.get(url, { 
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 15000 
 
-        const parsed = provider.parse(response);
+            })));
+            parsed = responses.flatMap(response => provider.parse(response));
+        } else {
+            const fetchUrl = provider.buildUrl(context);
+            console.log(`Fetching data from URL: ${fetchUrl}`);
+            const response = await axios.get(fetchUrl, { 
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 15000 
+            });
+            console.log("Response status:", response.status);
+            parsed = provider.parse(response);
+        }
+
         const normalized = provider.normalize(parsed, { ...context});
 
         const filtered = normalized.filter(t => parseInt(t.thesis.year, 10) > 2022);
@@ -105,9 +120,12 @@ app.get("/uni/:uni", async (req, res) => {
         console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
         
 
-        const thesesWithScores = filtered.map(t => {
+        const thesesWithScores = filtered.map((t) => {
             const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
-            return scoreData;
+            return {
+                ...t,
+                ...scoreData,
+            };
         });
 
         const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b._nokiaScore - a._nokiaScore);

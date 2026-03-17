@@ -78,7 +78,6 @@ export default function SingleThesis() {
         console.error("Backend ping failed:", pingError);
         // Log but do not block summary fetch
       }
-
       // Use getThesisSummary from api.ts instead of direct fetch
       const data = await getThesisSummary(handleKey, universityCode as string, thesisId as string | undefined);
 
