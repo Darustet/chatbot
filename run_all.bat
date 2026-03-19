@@ -20,7 +20,7 @@ REM Start Node backend
 REM -------------------------
 echo.
 echo Starting Node backend...
-start "Node Backend" cmd /k "cd /d "%~dp0backend" && node server.js"
+start "Node Backend" cmd /k "cd /d "%~dp0backend" && npx nodemon server.js"
 
 REM -------------------------
 REM Start Frontend (Expo)
