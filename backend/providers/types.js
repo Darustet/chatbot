@@ -1,8 +1,8 @@
 // add optional thesisId to the normalized thesis object, and update aalto provider to include it in the normalization process
-export function normalizeThesis({ handle, title, author, year, publisher, universityCode, thesisId }) {
+export function normalizeThesis({ handle, thesisId, title, author, year, publisher, universityCode, abstractByLanguage }) {
   return {
     handle,
     thesisId,
-    thesis: { title, author, year, publisher, universityCode }
+    thesis: { title, author, year, publisher, universityCode, abstractByLanguage }
   };
 }

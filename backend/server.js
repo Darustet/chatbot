@@ -4,6 +4,7 @@ import * as cheerio from "cheerio";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
+import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 
 const app = express();
 
@@ -27,11 +28,24 @@ const uniCodes = [
   {"uni": "Lapin", "code": "10024%2F69720"},
   {"uni": "Laurea", "code": "10024%2F12"},
   {"uni": "Metropolia", "code": "10024%2F6"},
+  {"uni": "Mikkelin", "code": "10024%2F2074"},
+  {"uni": "Oulu", "code": "10024%2F2124"},
+  {"uni": "Poliisi", "code": "10024%2F86551"},
+  {"uni": "Saimaan", "code": "10024%2F1567"},
+  {"uni": "Satakunnan", "code": "10024%2F14"},
+  {"uni": "Savonia", "code": "10024%2F1476"},
+  {"uni": "Seinäjoen", "code": "10024%2F1"},
+  {"uni": "Tampere", "code": "10024%2F13"},
+  {"uni": "Turun", "code": "10024%2F15"},
+  {"uni":  "Vaasa", "code": "10024%2F1660"},
+  {"uni": "Yrkeshögskolan Arcada", "code": "10024%2F4"},
+  {"uni":  "Yrkeshögskolan Novia", "code": "10024%2F2188"},
   {"uni": "Aalto", "code": "AALTO"},
   {"uni": "Helsinki", "code": "HELDA"},
   {"uni": "Tampere university", "code": "TREPO"},
   
 ];
+
 
 const validUniCodes = uniCodes.map(u => u.code);
 console.log('validUnicodes: ', validUniCodes);
@@ -52,7 +66,7 @@ app.use(function(req, res, next) {
 app.get("/uni/:uni", async (req, res) => {
     const uniCode = req.params.uni;
     const query = String(req.query.query || "nokia");
-    // Results per page, capped at 100, default 30
+    // Results per page, capped at 200, default 30
     const rpp = Math.min(parseInt(String(req.query.rpp || "30"), 10) || 30, 100);
     console.log('rpp: ', rpp);
     // Minimum year filter, default 2023
@@ -61,8 +75,7 @@ app.get("/uni/:uni", async (req, res) => {
     const d = new Date();
     const yearNow = d.getFullYear();
     
-    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp} yearMin=${yearMin}, yearNow=${yearNow})`);
-    console.log(`yearMin: ${yearMin}, yearNow: ${yearNow}`);
+    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearNow=${yearNow})`);
 
     // Build context for provider functions
     const context = { uniCode, query, rpp, yearMin, yearNow, uniCodes };
@@ -71,17 +84,33 @@ app.get("/uni/:uni", async (req, res) => {
     if (!isKnownUni) {
         return res.status(400).json({ error: `Unknown university code: ${uniCode}` });
     }
+    let parsed = [];
     try {
-        const fetchUrl = provider.buildUrl(context);
-        const response = await axios.get(fetchUrl, { 
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
-            timeout: 15000 
-        });
-        console.log("Response status:", response.status);
+        if (provider.buildUrls) {
+            const urls = provider.buildUrls(context);
+            console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
+            console.log(`Fetching data from Master URL: ${urls[1]}`);
+            const responses = await Promise.all(urls.map( url => axios.get(url, { 
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 15000 
 
-        const parsed = provider.parse(response);
+            })));
+            parsed = responses.flatMap(response => provider.parse(response));
+        } else {
+            const fetchUrl = provider.buildUrl(context);
+            console.log(`Fetching data from URL: ${fetchUrl}`);
+            const response = await axios.get(fetchUrl, { 
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 15000 
+            });
+            console.log("Response status:", response.status);
+            parsed = provider.parse(response);
+        }
+
         const normalized = provider.normalize(parsed, { ...context});
 
         const filtered = normalized.filter(t => parseInt(t.thesis.year, 10) > 2022);
@@ -89,8 +118,22 @@ app.get("/uni/:uni", async (req, res) => {
             console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
         }
+
         console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
-        return res.json(filtered);
+        
+
+        const thesesWithScores = filtered.map((t) => {
+            const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
+            return {
+                handle: t.handle,
+                thesisId: t.thesisId,
+                thesis: scoreData
+            };
+        });
+
+        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b.thesis._nokiaScore - a.thesis._nokiaScore);
+
+        return res.json(thesesWithScoreSorted);
     } catch (error) {
         console.error(`Error fetching or processing data for university ${uniCode}:`, error);
         return res.status(500).json({ error: `Failed to fetch or process data for university ${uniCode}` });

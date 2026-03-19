@@ -42,9 +42,7 @@ const uniCodes = [
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 10; 
-const linkStart = "discover?scope=";
-const linkEnd = "&query=+nokia&rpp=100";
+const RPP = 50; 
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
@@ -91,18 +89,18 @@ export default function ThesisList() {
           const majorUniCodes = [
             "10024%2F6",    // Metropolia
             "10024%2F431",  // Haaga-Helia
-            "10024%2F2124", // Oulu
-            "10024%2F13",   // Tampere
-            "10024%2F15",   // Turku
-            "10024%2F14",   // Satakunnan
-            "10024%2F13",   // Tampere
-            "10024%2F12"    // Laurea
+            // "10024%2F2124", // Oulu
+            // "10024%2F13",   // Tampere
+            // "10024%2F15",   // Turku
+            // "10024%2F14",   // Satakunnan
+            "10024%2F12",  // Laurea  
+            "AALTO",           // Aalto University
           ];
           
           // Fetch from each university with increased results per page
           const allPromises = majorUniCodes.map(async (uniCode) => {
             try {
-              const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=10`);
+              const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=50`);
               if (uniResponse.ok) {
                 const uniData = await uniResponse.json();
                 
@@ -179,7 +177,7 @@ export default function ThesisList() {
             const description = (thesis?.thesis?.description || thesis?.description || "").toLowerCase();
             const abstract = (thesis?.thesis?.abstract || thesis?.abstract || "").toLowerCase();
             const subject = (thesis?.thesis?.subject || thesis?.subject || "").toLowerCase();
-            
+
             // Calculate Nokia relevance score
             let nokiaScore = 0;
             
@@ -229,10 +227,18 @@ export default function ThesisList() {
           });
           
           // Sort by Nokia relevance score (highest first)
-          enhancedData.sort((a, b) => (b._nokiaScore || 0) - (a._nokiaScore || 0));
-          
+          const sortedEnhancedData = enhancedData.sort((a, b) => (b._nokiaScore || 0) - (a._nokiaScore || 0));
+
+          // Save title and score of theses in different relevance levels for debugging
+          const highRelevanceTheses = sortedEnhancedData.filter(t => t._nokiaRelevance === "high");
+          const mediumRelevanceTheses = sortedEnhancedData.filter(t => t._nokiaRelevance === "medium");
+          const lowRelevanceTheses = sortedEnhancedData.filter(t => t._nokiaRelevance === "low");
+          console.log(`High relevance theses (${highRelevanceTheses.length}):`, highRelevanceTheses.map(t => ({ title: t.title || t.thesis?.title, university: t._universityName, link: t.handle || t.thesis?.handle, score: t._nokiaScore })));
+          console.log(`Medium relevance theses (${mediumRelevanceTheses.length}):`, mediumRelevanceTheses.map(t => ({ title: t.title || t.thesis?.title, university: t._universityName, link: t.handle || t.thesis?.handle, score: t._nokiaScore })));
+          console.log(`Low relevance theses (${lowRelevanceTheses.length}):`, lowRelevanceTheses.map(t => ({ title: t.title || t.thesis?.title, university: t._universityName, link: t.handle || t.thesis?.handle, score: t._nokiaScore })));
+
           // Update state with enhanced data
-          setTheses(enhancedData);
+          setTheses(sortedEnhancedData);
         }
       } catch (error) {
         console.error("Error fetching Nokia thesis data:", error);
@@ -339,108 +345,111 @@ export default function ThesisList() {
           <Text style={styles.emptySubText}>Try adjusting your search filters or selecting a different university.</Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredTheses}
-          numColumns={3}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }: { item: any }) => {
-            console.log("Rendering thesis item:", item);
-            
-            // Enhanced string extraction with improved fallbacks
-            const title = String(item?.thesis?.title || item?.title || "Untitled Thesis");
-            const author = String(item?.thesis?.author || item?.author || "Unknown Author");
-            const year = String(item?.thesis?.year || item?.year || item?.thesis?.date || item?.date || "Unknown Date");
-            const universityCode = String(item?.thesis?.universityCode || item?.universityCode || "unknown university code");
-            const thesisId = String(item?.thesis?.thesisId || item?.thesisId || `unknown-id`);
-            
-            // Enhanced publisher extraction with multiple fallbacks
-            // First check if university name is stored directly (from our data enhancement)
-            let publisher = "";
-            let universitySource = ""; // For debugging
-            
-            if (item?._universityName) {
-              publisher = String(item._universityName);
-              universitySource = "stored university name";
-            } else if (item?.thesis?.publisher) {
-              publisher = String(item.thesis.publisher);
-              universitySource = "thesis publisher";
-            } else if (item?.publisher) {
-              publisher = String(item.publisher);
-              universitySource = "direct publisher";
-            } else if (item?.thesis?.community) {
-              publisher = String(item.thesis.community);
-              universitySource = "thesis community";
-            } else if (item?.community) {
-              publisher = String(item.community);
-              universitySource = "direct community";
-            } else if (selectedItem[0] !== "All") {
-              // If specific university is selected, use that
-              publisher = String(selectedItem[0]);
-              universitySource = "selected university";
-            } else {
-              // Only if all else fails, use a generic name
-              publisher = "Finnish University";
-              universitySource = "default fallback";
-            }
-            
-            // Debug log showing where we got the university name from
-            console.log(`University for "${title}": ${publisher} (Source: ${universitySource})`);
-            
-            // Get Nokia relevance information
-            const nokiaRelevance = item._nokiaRelevance || "low";
-            
-            // Define relevance indicator color
-            let relevanceColor = "#e74c3c"; // Red for low
-            if (nokiaRelevance === "high") {
-              relevanceColor = "#2ecc71"; // Green for high
-            } else if (nokiaRelevance === "medium") {
-              relevanceColor = "#f39c12"; // Orange for medium
-            }
-            
-            return (
-              <Link
-                href={{
-                  pathname: "/modules/SingleThesis",
-                  params: { 
-                    handle: getValidHandle(item), 
-                    thesisId,
-                    title, 
-                    author, 
-                    year, 
-                    publisher,
-                    universityCode,
-                  }
-                }}
-              >
-                <View style={styles.thesisCardWrapper}>
-                  {/* Add Nokia relevance indicator */}
-                  <View style={[styles.relevanceIndicator, { backgroundColor: relevanceColor }]}>
-                    <Text style={styles.relevanceText}>
-                      {nokiaRelevance === "high" ? "Nokia Project" : 
-                       nokiaRelevance === "medium" ? "Likely Nokia" : "Mentions Nokia"}
-                    </Text>
+        <>
+          <Text style={styles.emptySubText}>Found {filteredTheses.length} theses</Text>
+          <FlatList
+            data={filteredTheses}
+            numColumns={3}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }: { item: any }) => {
+              // console.log("Rendering thesis item:", item);
+              
+              // Enhanced string extraction with improved fallbacks
+              const title = String(item?.thesis?.title || item?.title || "Untitled Thesis");
+              const author = String(item?.thesis?.author || item?.author || "Unknown Author");
+              const year = String(item?.thesis?.year || item?.year || item?.thesis?.date || item?.date || "Unknown Date");
+              const universityCode = String(item?.thesis?.universityCode || item?.universityCode || "unknown university code");
+              const thesisId = String(item?.thesis?.thesisId || item?.thesisId || `unknown-id`);
+              
+              // Enhanced publisher extraction with multiple fallbacks
+              // First check if university name is stored directly (from our data enhancement)
+              let publisher = "";
+              let universitySource = ""; // For debugging
+              
+              if (item?._universityName) {
+                publisher = String(item._universityName);
+                universitySource = "stored university name";
+              } else if (item?.thesis?.publisher) {
+                publisher = String(item.thesis.publisher);
+                universitySource = "thesis publisher";
+              } else if (item?.publisher) {
+                publisher = String(item.publisher);
+                universitySource = "direct publisher";
+              } else if (item?.thesis?.community) {
+                publisher = String(item.thesis.community);
+                universitySource = "thesis community";
+              } else if (item?.community) {
+                publisher = String(item.community);
+                universitySource = "direct community";
+              } else if (selectedItem[0] !== "All") {
+                // If specific university is selected, use that
+                publisher = String(selectedItem[0]);
+                universitySource = "selected university";
+              } else {
+                // Only if all else fails, use a generic name
+                publisher = "Finnish University";
+                universitySource = "default fallback";
+              }
+              
+              // Debug log showing where we got the university name from
+              // console.log(`University for "${title}": ${publisher} (Source: ${universitySource})`);
+              
+              // Get Nokia relevance information
+              const nokiaRelevance = item._nokiaRelevance || "low";
+              
+              // Define relevance indicator color
+              let relevanceColor = "#e74c3c"; // Red for low
+              if (nokiaRelevance === "high") {
+                relevanceColor = "#2ecc71"; // Green for high
+              } else if (nokiaRelevance === "medium") {
+                relevanceColor = "#f39c12"; // Orange for medium
+              }
+              
+              return (
+                <Link
+                  href={{
+                    pathname: "/modules/SingleThesis",
+                    params: { 
+                      handle: getValidHandle(item), 
+                      thesisId,
+                      title, 
+                      author, 
+                      year, 
+                      publisher,
+                      universityCode,
+                    }
+                  }}
+                >
+                  <View style={styles.thesisCardWrapper}>
+                    {/* Add Nokia relevance indicator */}
+                    <View style={[styles.relevanceIndicator, { backgroundColor: relevanceColor }]}>
+                      <Text style={styles.relevanceText}>
+                        {nokiaRelevance === "high" ? "Nokia Project" : 
+                        nokiaRelevance === "medium" ? "Likely Nokia" : "Mentions Nokia"}
+                      </Text>
+                    </View>
+                    
+                    <ThesisBox
+                      title={title}
+                      author={author}
+                      year={year}
+                      publisher={publisher}
+                    />
+                    <Hoverable style={styles.singleThesis}>
+                      {({ hovered }) => (
+                        hovered && (
+                          <View style={styles.hovered}>
+                            <Text style={styles.hoveredText}>Click to view</Text>
+                          </View>
+                        )
+                      )}
+                    </Hoverable>
                   </View>
-                  
-                  <ThesisBox
-                    title={title}
-                    author={author}
-                    year={year}
-                    publisher={publisher}
-                  />
-                  <Hoverable style={styles.singleThesis}>
-                    {({ hovered }) => (
-                      hovered && (
-                        <View style={styles.hovered}>
-                          <Text style={styles.hoveredText}>Click to view</Text>
-                        </View>
-                      )
-                    )}
-                  </Hoverable>
-                </View>
-              </Link>
-            );
-          }}
-        />
+                </Link>
+              );
+            }}
+          />
+        </>
       )}
     </View>
   );
@@ -494,7 +503,7 @@ export const countMetropoliaNokiaTheses = async () => {
 
 export const countMetropoliaRelevantTheses = async () => {
   try {
-    const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=100");
+    const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=20");
     if (!response.ok) {
       throw new Error(`Failed to fetch theses: ${response.status}`);
     }
