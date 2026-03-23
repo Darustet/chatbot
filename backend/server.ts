@@ -1,10 +1,10 @@
 import axios from "axios";
 import express from "express";
 import * as cheerio from "cheerio";
-import adminRoutes from "./routes/admin.js";
-import chatbotRoutes from "./routes/chatbot.js";
-import { getProvider } from "./providers/index.js";
-import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
+import adminRoutes from "./routes/admin";
+import chatbotRoutes from "./routes/chatbot";
+import { getProvider } from "./providers/index";
+import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance";
 
 const app = express();
 
