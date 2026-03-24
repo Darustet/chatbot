@@ -107,7 +107,7 @@ export default function ThesisList() {
                 // Add university information to theses that are missing it
                 const uniInfo = uniCodes.find(u => u.code === uniCode);
                 //  
-                const enhancedUniData = uniData.map(thesis => ({
+                const enhancedUniData = uniData.map((thesis: any) => ({
                   ...thesis,
                   universityCodeStr: uniCode,
                   _universityName: uniInfo ? uniInfo.uni : null  // Store original university name
@@ -150,7 +150,7 @@ export default function ThesisList() {
           // Add university information
           const uniInfo = uniCodes.find(u => u.code === searchedUni);
           if (uniInfo) {
-            fetchedData = fetchedData.map(thesis => ({
+            fetchedData = fetchedData.map((thesis: any) => ({
               ...thesis,
               _universityName: uniInfo.uni  // Store original university name
             }));
@@ -164,85 +164,11 @@ export default function ThesisList() {
           throw new Error("No Nokia-related thesis data received from theseus.fi");
         }
         
-        // Update state with combined data
+        // Update state with enhanced data
         setTheses(fetchedData);
-        
-        // Apply enhanced Nokia relevance filtering
-        if (fetchedData.length > 0) {
-          console.log("Applying enhanced Nokia relevance filtering...");
-          
-          const enhancedData = fetchedData.map(thesis => {
-            // Extract relevant text fields for analysis
-            const title = (thesis?.thesis?.title || thesis?.title || "").toLowerCase();
-            const description = (thesis?.thesis?.description || thesis?.description || "").toLowerCase();
-            const abstract = (thesis?.thesis?.abstract || thesis?.abstract || "").toLowerCase();
-            const subject = (thesis?.thesis?.subject || thesis?.subject || "").toLowerCase();
-
-            // Calculate Nokia relevance score
-            let nokiaScore = 0;
-            
-            // Title is most important (5 points)
-            if (title.includes("nokia")) {
-              nokiaScore += 5;
-            }
-            
-            // Abstract/description is very relevant (3 points)
-            if (abstract.includes("nokia") || description.includes("nokia")) {
-              nokiaScore += 3;
-            }
-            
-            // Subject/keywords are somewhat relevant (2 points)
-            if (subject.includes("nokia")) {
-              nokiaScore += 2;
-            }
-            
-            // Check for highly relevant phrases (additional 3 points)
-            const relevantPhrases = [
-              "collaboration with nokia",
-              "nokia project",
-              "nokia case study",
-              "nokia corporation",
-              "nokia technologies"
-            ];
-            
-            relevantPhrases.forEach(phrase => {
-              if (title.includes(phrase) || abstract.includes(phrase) || description.includes(phrase)) {
-                nokiaScore += 3;
-              }
-            });
-            
-            // Determine confidence level
-            let nokiaRelevance = "low";
-            if (nokiaScore >= 8) {
-              nokiaRelevance = "high";
-            } else if (nokiaScore >= 3) {
-              nokiaRelevance = "medium";
-            }
-            
-            return {
-              ...thesis,
-              _nokiaScore: nokiaScore,
-              _nokiaRelevance: nokiaRelevance
-            };
-          });
-          
-          // Sort by Nokia relevance score (highest first)
-          const sortedEnhancedData = enhancedData.sort((a, b) => (b._nokiaScore || 0) - (a._nokiaScore || 0));
-
-          // Save title and score of theses in different relevance levels for debugging
-          const highRelevanceTheses = sortedEnhancedData.filter(t => t._nokiaRelevance === "high");
-          const mediumRelevanceTheses = sortedEnhancedData.filter(t => t._nokiaRelevance === "medium");
-          const lowRelevanceTheses = sortedEnhancedData.filter(t => t._nokiaRelevance === "low");
-          console.log(`High relevance theses (${highRelevanceTheses.length}):`, highRelevanceTheses.map(t => ({ title: t.title || t.thesis?.title, university: t._universityName, link: t.handle || t.thesis?.handle, score: t._nokiaScore })));
-          console.log(`Medium relevance theses (${mediumRelevanceTheses.length}):`, mediumRelevanceTheses.map(t => ({ title: t.title || t.thesis?.title, university: t._universityName, link: t.handle || t.thesis?.handle, score: t._nokiaScore })));
-          console.log(`Low relevance theses (${lowRelevanceTheses.length}):`, lowRelevanceTheses.map(t => ({ title: t.title || t.thesis?.title, university: t._universityName, link: t.handle || t.thesis?.handle, score: t._nokiaScore })));
-
-          // Update state with enhanced data
-          setTheses(sortedEnhancedData);
-        }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching Nokia thesis data:", error);
-        setError(error.message || "Failed to load Nokia-related theses.");
+        setError(error instanceof Error ? error.message : "Failed to load Nokia-related theses.");
       } finally {
         setLoading(false);
       }
@@ -251,19 +177,55 @@ export default function ThesisList() {
     fetchTheses();
   }, [searchedUni]);
   
-  // Simplify the filtering to handle any data structure
-  const filteredTheses = theses.filter(thesis => {
-    // Support both the nested and direct structures
-    const title = thesis.title || thesis.thesis?.title || "";
-    const author = thesis.author || thesis.thesis?.author || "";
-    const year = thesis.year || thesis.thesis?.year || thesis.date || thesis.thesis?.date || "";
-    
-    const matchesTitle = title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAuthor = selectedAuthor === "" || author.toLowerCase().includes(selectedAuthor.toLowerCase());
-    const matchesYear = selectedYear === "" || year.includes(selectedYear);
-    
-    return matchesTitle && matchesAuthor && matchesYear;
-  });
+  const relevanceOrder: Record<string, number> = {
+    NOKIA_COLLABORATION: 0,
+    AMBIGUOUS: 1,
+    NO_INDICATION: 2,
+    NOT_SCORED: 3,
+  };
+
+  const getItemRelevance = (item: any) => {
+    const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
+    const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION"];
+    const hasKnownRelevance =
+      typeof rawNokiaRelevance === "string" && validNokiaLabels.includes(rawNokiaRelevance);
+    return hasKnownRelevance ? rawNokiaRelevance : "NOT_SCORED";
+  };
+
+  const getItemScore = (item: any) => {
+    const rawScore = item?.thesis?._nokiaScore ?? item?._nokiaScore;
+    if (rawScore === null || rawScore === undefined) {
+      return -1;
+    }
+
+    const score = Number(rawScore);
+    return Number.isNaN(score) ? -1 : score;
+  };
+
+  // Filter first, then sort by relevance label and score.
+  const filteredTheses = theses
+    .filter(thesis => {
+      // Support both the nested and direct structures
+      const title = thesis.title || thesis.thesis?.title || "";
+      const author = thesis.author || thesis.thesis?.author || "";
+      const year = thesis.year || thesis.thesis?.year || thesis.date || thesis.thesis?.date || "";
+
+      const matchesTitle = title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesAuthor = selectedAuthor === "" || author.toLowerCase().includes(selectedAuthor.toLowerCase());
+      const matchesYear = selectedYear === "" || year.includes(selectedYear);
+
+      return matchesTitle && matchesAuthor && matchesYear;
+    })
+    .sort((a, b) => {
+      const aRelevanceRank = relevanceOrder[getItemRelevance(a)] ?? relevanceOrder.NOT_SCORED;
+      const bRelevanceRank = relevanceOrder[getItemRelevance(b)] ?? relevanceOrder.NOT_SCORED;
+
+      if (aRelevanceRank !== bRelevanceRank) {
+        return aRelevanceRank - bRelevanceRank;
+      }
+
+      return getItemScore(b) - getItemScore(a);
+    });
 
   return (
     <View style={styles.container}>
@@ -394,15 +356,25 @@ export default function ThesisList() {
               // Debug log showing where we got the university name from
               // console.log(`University for "${title}": ${publisher} (Source: ${universitySource})`);
               
-              // Get Nokia relevance information
-              const nokiaRelevance = item._nokiaRelevance || "low";
+              // Guard legacy/unscored items that do not include Nokia scoring fields yet.
+              const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
+              const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION"];
+              const hasKnownRelevance =
+                typeof rawNokiaRelevance === "string" && validNokiaLabels.includes(rawNokiaRelevance);
+              const nokiaRelevance = hasKnownRelevance ? rawNokiaRelevance : "NOT_SCORED";
+              
+              // Extract the Nokia score
+              const nokiaScore = getItemScore(item);
+              const scoreDisplay = nokiaScore >= 0 ? nokiaScore : "-";
               
               // Define relevance indicator color
-              let relevanceColor = "#e74c3c"; // Red for low
-              if (nokiaRelevance === "high") {
+              let relevanceColor = "#95a5a6"; // Gray for not scored / unknown
+              if (nokiaRelevance === "NOKIA_COLLABORATION") {
                 relevanceColor = "#2ecc71"; // Green for high
-              } else if (nokiaRelevance === "medium") {
+              } else if (nokiaRelevance === "AMBIGUOUS") {
                 relevanceColor = "#f39c12"; // Orange for medium
+              } else if (nokiaRelevance === "NO_INDICATION") {
+                relevanceColor = "#e74c3c"; // Red for low
               }
               
               return (
@@ -424,8 +396,7 @@ export default function ThesisList() {
                     {/* Add Nokia relevance indicator */}
                     <View style={[styles.relevanceIndicator, { backgroundColor: relevanceColor }]}>
                       <Text style={styles.relevanceText}>
-                        {nokiaRelevance === "high" ? "Nokia Project" : 
-                        nokiaRelevance === "medium" ? "Likely Nokia" : "Mentions Nokia"}
+                          {nokiaRelevance}
                       </Text>
                     </View>
                     
