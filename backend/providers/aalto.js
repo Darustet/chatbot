@@ -64,7 +64,7 @@ export const AaltoProvider = {
       const abstracts = item.metadata?.["dc.description.abstract"];
 
       const abstractByLanguage = toAbstractByLanguage(abstracts);
-
+      
       return normalizeThesis({
         handle,
         thesisId,

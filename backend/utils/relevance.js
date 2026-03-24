@@ -4,7 +4,11 @@ const NOKIA_ENTITIES = [
   "nokia corporation",
   "nokia bell labs",
   "nokia solutions and networks",
+<<<<<<< HEAD
   "nokia cloud and network services", // major business division
+=======
+  "nokia cloud and network services", // major business division 
+>>>>>>> main
   "nokia mobile networks",
   "nokia technologies", // Usually the IP/Patent unit
   "nokia oulu",
@@ -124,8 +128,8 @@ const SCORE = {
 const normalize = (value) => String(value || "").toLowerCase().trim();
 
 const toLabel = (score) => {
-  if (score >= 8) return "NOKIA_COLLABORATION"; //
-  if (score >= 3) return "AMBIGUOUS";
+  if (score >= 8) return "NOKIA_COLLABORATION"; // 
+  if (score >= 3) return "AMBIGUOUS"; 
   return "NO_INDICATION"; // No indication that the thesis is connected to Nokia Corporation
 };
 
@@ -164,11 +168,11 @@ const pickByLanguage = (value, lang) => {
     if (value[lang]) {
       return normalize(value[lang]);
     }
-    // pick the first available language if the preferred language is not available.
+    // pick the first available language if the preferred language is not available. 
     const firstKey = Object.keys(value)[0];
     if (firstKey) {
       return normalize(value[firstKey]);
-    }
+    } 
   }
 
   return "";

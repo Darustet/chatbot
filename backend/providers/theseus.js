@@ -2,16 +2,21 @@ import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
 
 const THESEUS_BASE = "https://www.theseus.fi/";
+const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
+const theseusExampleUrl2 = "https://www.theseus.fi/discover?scope=10024%2F160908&query=nokia&submit=&filtertype_0=vuosi&filter_relational_operator_0=equals&filter_0=%5B2023+TO+2025%5D&rpp=50";
 
 export const TheseusProvider = {
   // Build the API URL based on the query and filters
-  buildUrl({ query, rpp, uniCode }) {
+  buildUrl({ query, rpp, uniCode, yearMin, yearNow }) {
     const encodedQuery = encodeURIComponent(query);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+    const encodedUniCode = encodeURIComponent(uniCode);
+    console.log('from theseusExampleUrl.fi: ', 'query:', query, 'rpp:', rpp, 'uniCode:', uniCode, 'yearMin:', yearMin, 'yearNow:', yearNow);
     // TODO: Currently "all" return only Metropolia
     if (uniCode === "all") {
-      return `${THESEUS_BASE}discover?scope=10024%2F6&query=+${encodedQuery}&rpp=${rpp}`;
+      return `${THESEUS_BASE}discover?scope=10024%2F6&query=${encodedQuery}&submit=&filtertype_0=vuosi&filter_relational_operator_0=equals&filter_0=${encodedDateFilter}&rpp=${rpp}`;
     }
-    return `${THESEUS_BASE}discover?scope=${uniCode}&query=+${encodedQuery}&rpp=${rpp}`;
+    return `${THESEUS_BASE}discover?scope=${encodedUniCode}&query=${encodedQuery}&submit=&filtertype_0=vuosi&filter_relational_operator_0=equals&filter_0=${encodedDateFilter}&rpp=${rpp}`;
   },
 
   // Parse the API response to extract thesis elements

@@ -3,6 +3,6 @@ export function normalizeThesis({ handle, thesisId, title, author, year, publish
   return {
     handle,
     thesisId,
-    thesis: { title, author, year, publisher, universityCode, abstractByLanguage},
+    thesis: { title, author, year, publisher, universityCode, abstractByLanguage }
   };
 }
