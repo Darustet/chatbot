@@ -38,12 +38,12 @@ const uniCodes = [
   {"uni":  "Yrkeshögskolan Novia", "code": "10024%2F2188"},
   {"uni": "Aalto", "code": "AALTO"},
   {"uni": "Helsinki", "code": "HELDA"},
-  {"uni": "Tampere university", "code": "TREPO"},
+  {"uni": "Tampere University", "code": "TREPO"},
 ];
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 50; 
+const RPP = 50;
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
@@ -76,16 +76,16 @@ export default function ThesisList() {
     const fetchTheses = async () => {
       setError(null);
       setLoading(true);
-      
+
       try {
         console.log("Fetching Nokia-related thesis data from theseus.fi via server...");
-        
+
         let fetchedData = [];
-        
+
         if (searchedUni === "all") {
           // When "All" is selected, fetch from multiple major universities
           setLoading(true);
-          
+
           // Select a few major universities to get a diverse set of theses
           const majorUniCodes = [
             "10024%2F6",    // Metropolia
@@ -94,20 +94,22 @@ export default function ThesisList() {
             // "10024%2F13",   // Tampere
             // "10024%2F15",   // Turku
             // "10024%2F14",   // Satakunnan
-            "10024%2F12",  // Laurea  
+            "10024%2F12",  // Laurea
             "AALTO",           // Aalto University
+            "TREPO",           // Tampere University
+            "HELDA",           // University of Helsinki
           ];
-          
+
           // Fetch from each university with increased results per page
           const allPromises = majorUniCodes.map(async (uniCode) => {
             try {
               const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=50`);
               if (uniResponse.ok) {
                 const uniData = await uniResponse.json();
-                
+
                 // Add university information to theses that are missing it
                 const uniInfo = uniCodes.find(u => u.code === uniCode);
-                //  
+                //
                 const enhancedUniData = uniData.map((thesis: any) => ({
                   ...thesis,
                   universityCodeStr: uniCode,
@@ -122,21 +124,21 @@ export default function ThesisList() {
               return [];
             }
           });
-          
+
           // Wait for all requests to complete
           const results = await Promise.all(allPromises);
-          
+
           // Combine all results
           fetchedData = results.flat();
-          
+
           console.log(`Combined ${fetchedData.length} Nokia-related thesis items from multiple universities`);
         } else {
           // For a specific university, proceed with the existing endpoint but with increased results
           const endpoint = `${API_BASE_URL}/uni/${searchedUni}?query=nokia&rpp=${RPP}`;
-          
+
           console.log(`Using endpoint: ${endpoint}`);
           const response = await fetch(endpoint);
-          
+
           if (response.status === 503) {
             throw new Error("Theseus.fi is temporarily unavailable. Please try again later.");
           }
@@ -144,10 +146,10 @@ export default function ThesisList() {
           if (!response.ok) {
             throw new Error(`Error: ${response.status} - ${await response.text()}`);
           }
-          
+
           fetchedData = await response.json();
           console.log('fetched data: ', fetchedData);
-          
+
           // Add university information
           const uniInfo = uniCodes.find(u => u.code === searchedUni);
           if (uniInfo) {
@@ -156,15 +158,15 @@ export default function ThesisList() {
               _universityName: uniInfo.uni  // Store original university name
             }));
           }
-          
+
           console.log(`Received ${fetchedData.length} Nokia-related thesis items from theseus.fi`);
         }
-        
+
         // Verify we got data
         if (fetchedData.length === 0) {
           throw new Error("No Nokia-related thesis data received from theseus.fi");
         }
-        
+
         // Update state with enhanced data
         setTheses(fetchedData);
       } catch (error: unknown) {
@@ -174,7 +176,7 @@ export default function ThesisList() {
         setLoading(false);
       }
     };
-    
+
     fetchTheses();
   }, [searchedUni]);
 
@@ -187,14 +189,36 @@ export default function ThesisList() {
 
   // Add the current item to the export format array
   const exportCsvFormat = useMemo(() => {
-    return theses.map(item => ({
-      title: item.thesis?.title ?? "",
-      university: item.thesis?.publisher ?? "",
-      author: item.thesis?.author ?? "",
-      date: item.thesis?.year || item.thesis?.date || "",
-      nokiaScore: item.thesis?._nokiaScore ?? 0,
-      link: item.handle ? `TODO:${item.handle}` : ""
-    }));
+    return theses.map(item => {
+        const title = item.thesis?.title ?? "";
+        const university = item.thesis?.publisher ?? "";
+        const author = item.thesis?.author ?? "";
+        const date = item.thesis?.year || item.thesis?.date || "";
+        const nokiaScore = item.thesis?._nokiaScore ?? 0;
+        const handle = item.handle ?? "";
+        const universityCode = item.thesis?.universityCode ?? "";
+
+        let link = "";
+
+        if (universityCode === "TREPO") {
+          link = `https://trepo.tuni.fi${handle}`;
+        } else if (universityCode === "AALTO") {
+          link = `https://aaltodoc.aalto.fi${handle}`;
+        } else if (universityCode === "HELDA") {
+          link = `https://helda.helsinki.fi${handle}`;
+        } else {
+          link = `https://theseus.fi${handle}`;
+        }
+
+        return {
+          title,
+          university,
+          author,
+          date,
+          nokiaScore,
+          link
+        };
+    });
   }, [theses]);
 
   const getItemRelevance = (item: any) => {
@@ -252,7 +276,7 @@ export default function ThesisList() {
           placeholderTextColor="#999"
           onChangeText={text => setSearchTerm(text)}
         />
-        
+
         <View style={styles.filterRow}>
           <View style={styles.dropdownContainer}>
             <SelectDropdown
@@ -276,14 +300,14 @@ export default function ThesisList() {
               )}
             />
           </View>
-          
+
           <TextInput
             style={styles.inputField}
             placeholder="Filter by author..."
             placeholderTextColor="#999"
             onChangeText={text => setSelectedAuthor(text)}
           />
-          
+
           <TextInput
             style={styles.inputField}
             placeholder="Filter by year..."
@@ -292,10 +316,10 @@ export default function ThesisList() {
             onChangeText={text => setSelectedYear(text)}
           />
         </View>
-        
+
         <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={styles.searchButton} 
+          <TouchableOpacity
+            style={styles.searchButton}
             onPress={() => setSearchedUni(selectedItem[1])}
           >
             <Text style={styles.searchButtonText}>Search</Text>
@@ -303,13 +327,13 @@ export default function ThesisList() {
           <View style={styles.downloadWrapper}>
             <DownloadCsv elements={exportCsvFormat} />
           </View>
-        </View>   
+        </View>
       </View>
 
       {error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={() => setSearchedUni(selectedItem[1])}
           >
@@ -335,19 +359,19 @@ export default function ThesisList() {
             keyExtractor={(item, index) => index.toString()}
             renderItem={({ item }: { item: any }) => {
               // console.log("Rendering thesis item:", item);
-              
+
               // Enhanced string extraction with improved fallbacks
               const title = String(item?.thesis?.title || item?.title || "Untitled Thesis");
               const author = String(item?.thesis?.author || item?.author || "Unknown Author");
               const year = String(item?.thesis?.year || item?.year || item?.thesis?.date || item?.date || "Unknown Date");
               const universityCode = String(item?.thesis?.universityCode || item?.universityCode || "unknown university code");
               const thesisId = String(item?.thesis?.thesisId || item?.thesisId || `unknown-id`);
-              
+
               // Enhanced publisher extraction with multiple fallbacks
               // First check if university name is stored directly (from our data enhancement)
               let publisher = "";
               let universitySource = ""; // For debugging
-              
+
               if (item?._universityName) {
                 publisher = String(item._universityName);
                 universitySource = "stored university name";
@@ -372,21 +396,21 @@ export default function ThesisList() {
                 publisher = "Finnish University";
                 universitySource = "default fallback";
               }
-              
+
               // Debug log showing where we got the university name from
               // console.log(`University for "${title}": ${publisher} (Source: ${universitySource})`);
-              
+
               // Guard legacy/unscored items that do not include Nokia scoring fields yet.
               const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
               const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION"];
               const hasKnownRelevance =
                 typeof rawNokiaRelevance === "string" && validNokiaLabels.includes(rawNokiaRelevance);
               const nokiaRelevance = hasKnownRelevance ? rawNokiaRelevance : "NOT_SCORED";
-              
+
               // Extract the Nokia score
               const nokiaScore = getItemScore(item);
               const scoreDisplay = nokiaScore >= 0 ? nokiaScore : "-";
-              
+
               // Define relevance indicator color
               let relevanceColor = "#95a5a6"; // Gray for not scored / unknown
               if (nokiaRelevance === "NOKIA_COLLABORATION") {
@@ -401,12 +425,12 @@ export default function ThesisList() {
                 <Link
                   href={{
                     pathname: "/modules/SingleThesis",
-                    params: { 
-                      handle: getValidHandle(item), 
+                    params: {
+                      handle: getValidHandle(item),
                       thesisId,
-                      title, 
-                      author, 
-                      year, 
+                      title,
+                      author,
+                      year,
                       publisher,
                       universityCode,
                     }
@@ -419,7 +443,7 @@ export default function ThesisList() {
                           {nokiaRelevance}
                       </Text>
                     </View>
-                    
+
                     <ThesisBox
                       title={title}
                       author={author}
