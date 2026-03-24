@@ -43,7 +43,7 @@ export const DownloadCsv = ({ elements }) => {
     const rows = jsonData
       .map((row: any) => {
         // Map each row to CSV format
-        return columnHeaders.map((field: any) => escapeCSV(row[field] || ''))
+        return columnHeaders.map((field: any) => escapeCSV(row[field] ?? ''))
         .join(';');
       })
       .join('\n');
