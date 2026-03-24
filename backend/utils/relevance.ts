@@ -1,3 +1,5 @@
+import type { Thesis, NokiaRelevanceLabel, ScoredThesis } from "../../shared/types/thesis";
+
 // Nokia Entities
 const NOKIA_ENTITIES = [
   "nokia oyj",
@@ -121,15 +123,15 @@ const SCORE = {
 // Utility functions
 
 // Normalize text by lowercasing and trimming whitespace
-const normalize = (value) => String(value || "").toLowerCase().trim();
+const normalize = (value: string | undefined) => String(value || "").toLowerCase().trim();
 
-const toLabel = (score) => {
+const toLabel = (score: number): NokiaRelevanceLabel => {
   if (score >= 8) return "NOKIA_COLLABORATION"; // 
   if (score >= 3) return "AMBIGUOUS"; 
   return "NO_INDICATION"; // No indication that the thesis is connected to Nokia Corporation
 };
 
-const countPhraseMatches = (text, phrases) => {
+const countPhraseMatches = (text: string, phrases: string[]) => {
   let matches = 0;
   for (const phrase of phrases) {
     if (text.includes(phrase)) {
@@ -140,16 +142,19 @@ const countPhraseMatches = (text, phrases) => {
 };
 
 // Check if a word exists in the text as a whole word (not part of another word). For example, "nokia" should not match "nokian" or "nokiaville".
-const hasWord = (text, word) => {
+const hasWord = (text: string, word: string) => {
   const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`\\b${safeWord}\\b`, "i");
   return regex.test(text);
 };
 
-const containsNokia = (text) => hasWord(text, "nokia");
+const containsNokia = (text: string) => hasWord(text, "nokia");
 
 // Pick the most relevant text based on language.
-const pickByLanguage = (value, lang) => {
+const pickByLanguage = (
+  value: string | Record<string, string> | string[] | null | undefined,
+  lang: string
+) => {
   if (!value) return "";
 
   if (typeof value === "string") {
@@ -175,7 +180,8 @@ const pickByLanguage = (value, lang) => {
 };
 
 // Main scroring function
-export const calculateNokiaCollaborationScoreByRules = (thesis, lang = "en") => {
+
+export const calculateNokiaCollaborationScoreByRules = (thesis: Thesis, lang = "en"): ScoredThesis => {
 
   const title = normalize(thesis.title);
   const abstract = pickByLanguage(thesis.abstractByLanguage, lang);

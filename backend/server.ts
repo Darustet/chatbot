@@ -1,10 +1,18 @@
 import axios from "axios";
 import express from "express";
+import { Request, Response } from "express";
 import * as cheerio from "cheerio";
 import adminRoutes from "./routes/admin";
 import chatbotRoutes from "./routes/chatbot";
 import { getProvider } from "./providers/index";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance";
+import type { ThesisSearchResult } from "../shared/types/thesis";
+
+type ApiErrorResponse = {
+    error: string;
+};
+
+type UniRouteResponse = ThesisSearchResult[] | ApiErrorResponse;
 
 const app = express();
 
@@ -63,7 +71,7 @@ app.use(function(req, res, next) {
     next();
 });
 
-app.get("/uni/:uni", async (req, res) => {
+app.get("/uni/:uni", async (req: Request<{ uni: string }, {}, { query?: string; rpp?: string; yearMin?: string }>, res: Response<UniRouteResponse>) => {
     const uniCode = req.params.uni;
     const query = String(req.query.query || "nokia");
     // Results per page, capped at 200, default 30
@@ -90,14 +98,14 @@ app.get("/uni/:uni", async (req, res) => {
             const urls = provider.buildUrls(context);
             console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
             console.log(`Fetching data from Master URL: ${urls[1]}`);
-            const responses = await Promise.all(urls.map( url => axios.get(url, { 
+            const responses = await Promise.all(urls.map( (url: string) => axios.get(url, { 
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 },
                 timeout: 15000 
 
             })));
-            parsed = responses.flatMap(response => provider.parse(response));
+            parsed = responses.flatMap((response: any) => provider.parse(response));
         } else {
             const fetchUrl = provider.buildUrl(context);
             console.log(`Fetching data from URL: ${fetchUrl}`);
@@ -111,9 +119,9 @@ app.get("/uni/:uni", async (req, res) => {
             parsed = provider.parse(response);
         }
 
-        const normalized = provider.normalize(parsed, { ...context});
+        const normalized: ThesisSearchResult[] = provider.normalize(parsed, { ...context});
 
-        const filtered = normalized.filter(t => parseInt(t.thesis.year, 10) > 2022);
+        const filtered = normalized.filter(t => parseInt(t.thesis.year ?? "0", 10) > 2022);
         if (filtered.length === 0) {
             console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
@@ -122,7 +130,7 @@ app.get("/uni/:uni", async (req, res) => {
         console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
         
 
-        const thesesWithScores = filtered.map((t) => {
+        const thesesWithScores: ThesisSearchResult[] = filtered.map((t) => {
             const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
             return {
                 handle: t.handle,

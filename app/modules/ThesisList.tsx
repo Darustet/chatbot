@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
 import { Hoverable } from "react-native-web-hover";
 import { config } from "../config";
+import type { ThesisSearchResult } from "../../shared/types/thesis";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
@@ -47,7 +48,7 @@ const RPP = 50;
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
   const [searchedUni, setSearchedUni] = useState<any>(uniCodes[0].code);
-  const [theses, setTheses] = useState<any[]>([]);
+  const [theses, setTheses] = useState<ThesisSearchResult[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedAuthor, setSelectedAuthor] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
