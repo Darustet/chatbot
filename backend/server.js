@@ -5,7 +5,6 @@ import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
-import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 
 const app = express();
 

@@ -4,11 +4,7 @@ const NOKIA_ENTITIES = [
   "nokia corporation",
   "nokia bell labs",
   "nokia solutions and networks",
-<<<<<<< HEAD
-  "nokia cloud and network services", // major business division
-=======
   "nokia cloud and network services", // major business division 
->>>>>>> main
   "nokia mobile networks",
   "nokia technologies", // Usually the IP/Patent unit
   "nokia oulu",
