@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
+import {toAbstractByLanguage } from "./aalto.js";
 
 const TREPO_BASE = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
@@ -106,6 +107,13 @@ export const TrepoProvider = {
         '.date, span:contains("Date"), span:contains("Päivämäärä")'
       );
 
+      //Abstract
+      let abstracts = "";
+        const abstractElem = el.find(".abstract");
+        if (abstractElem.length) {
+            abstracts = abstractElem.first().text().trim();
+        }
+
       if (yearElem.length) {
         year = yearElem
           .first()
@@ -121,6 +129,8 @@ export const TrepoProvider = {
         }
       }
 
+      const abstractByLanguage = toAbstractByLanguage(abstracts);
+
       return normalizeThesis({
         handle,
         thesisId: null,
@@ -129,6 +139,7 @@ export const TrepoProvider = {
         year: year || "Unknown Date",
         publisher: publisher || "Tampere university",
         universityCode: uniCode,
+        abstractByLanguage,
       });
     });
   },
