@@ -1,10 +1,11 @@
 import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity } from "react-native";
 import SelectDropdown from 'react-native-select-dropdown';
 import { Link } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
 import { Hoverable } from "react-native-web-hover";
 import { config } from "../config";
+import { DownloadCsv } from "../components/DownloadCsv";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
@@ -176,13 +177,25 @@ export default function ThesisList() {
     
     fetchTheses();
   }, [searchedUni]);
-  
+
   const relevanceOrder: Record<string, number> = {
     NOKIA_COLLABORATION: 0,
     AMBIGUOUS: 1,
     NO_INDICATION: 2,
     NOT_SCORED: 3,
   };
+
+  // Add the current item to the export format array
+  const exportCsvFormat = useMemo(() => {
+    return theses.map(item => ({
+      title: item.thesis?.title ?? "",
+      university: item.thesis?.publisher ?? "",
+      author: item.thesis?.author ?? "",
+      date: item.thesis?.year || item.thesis?.date || "",
+      nokiaScore: item.thesis?._nokiaScore ?? 0,
+      link: item.handle ? `TODO:${item.handle}` : ""
+    }));
+  }, [theses]);
 
   const getItemRelevance = (item: any) => {
     const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
@@ -226,6 +239,8 @@ export default function ThesisList() {
 
       return getItemScore(b) - getItemScore(a);
     });
+
+    console.log('After filtering: ', filteredTheses);
 
   return (
     <View style={styles.container}>
@@ -278,12 +293,17 @@ export default function ThesisList() {
           />
         </View>
         
-        <TouchableOpacity 
-          style={styles.searchButton} 
-          onPress={() => setSearchedUni(selectedItem[1])}
-        >
-          <Text style={styles.searchButtonText}>Search</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity 
+            style={styles.searchButton} 
+            onPress={() => setSearchedUni(selectedItem[1])}
+          >
+            <Text style={styles.searchButtonText}>Search</Text>
+          </TouchableOpacity>
+          <View style={styles.downloadWrapper}>
+            <DownloadCsv elements={exportCsvFormat} />
+          </View>
+        </View>   
       </View>
 
       {error ? (
@@ -376,7 +396,7 @@ export default function ThesisList() {
               } else if (nokiaRelevance === "NO_INDICATION") {
                 relevanceColor = "#e74c3c"; // Red for low
               }
-              
+
               return (
                 <Link
                   href={{
@@ -597,6 +617,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  buttonRow: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  downloadWrapper: {
+    position: "absolute",
+    right: 0,
   },
   loadingIndicator: {
     marginTop: 20,
