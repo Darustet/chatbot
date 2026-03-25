@@ -6,6 +6,19 @@ const TREPO_BASE = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
 const TREPO_MASTER_SCOPE = "10024/105882";
 
+const detectAbstractLanguage = (text) => {
+  const lower = text.toLowerCase();
+
+  if (/[äöå]/i.test(text) || /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia)\b/i.test(lower)) {
+    return "fi";
+  }
+
+  if (/\b(the|this thesis|abstract|study|purpose)\b/i.test(lower)) {
+    return "en";
+  }
+
+  return "unknown";
+};
 export const TrepoProvider = {
   // Build both TREPO search URLs
   buildUrls({ query, rpp }) {
@@ -107,13 +120,6 @@ export const TrepoProvider = {
         '.date, span:contains("Date"), span:contains("Päivämäärä")'
       );
 
-      //Abstract
-      let abstracts = "";
-        const abstractElem = el.find(".abstract");
-        if (abstractElem.length) {
-            abstracts = abstractElem.first().text().trim();
-        }
-
       if (yearElem.length) {
         year = yearElem
           .first()
@@ -129,8 +135,25 @@ export const TrepoProvider = {
         }
       }
 
+      // Abstract
+      const abstracts = [];
+      const abstractElem = el.find(".abstract").first();
+
+      if (abstractElem.length) {
+        const abstractText = abstractElem.text().replace(/\s+/g, " ").trim();
+
+        if (abstractText) {
+          abstracts.push({
+            language: detectAbstractLanguage(abstractText),
+            value: abstractText,
+          });
+        }
+      }
+
       const abstractByLanguage = toAbstractByLanguage(abstracts);
+
       console.log("Abstract by lang: ", abstractByLanguage);
+      console.log("Abstracts: ", abstracts);
 
       return normalizeThesis({
         handle,
