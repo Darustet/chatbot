@@ -1,8 +1,21 @@
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
+import {toAbstractByLanguage } from "./aalto.js";
 
 const TREPO_BASE = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881"
+
+const detectAbstractLanguage = (text) => {
+  const lower = text.toLowerCase();
+
+  if (/[äöå]/i.test(text) || /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia)\b/i.test(lower)) {
+    return "fi";
+  } else {
+  return "en";
+  }
+
+  return "unknown";
+};
 
 export const TrepoProvider = {
   // Build the API URL based on the query and filters
@@ -87,6 +100,29 @@ export const TrepoProvider = {
           }
       }
 
+      const abstracts = [];
+        const abstractElem = el.find(".abstract").first();
+
+        if (abstractElem.length) {
+          const abstractText = abstractElem
+            .text()
+            .replace(/\.\.\./g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+          if (abstractText) {
+            abstracts.push({
+              language: detectAbstractLanguage(abstractText),
+              value: abstractText,
+            });
+          }
+        }
+
+        const abstractByLanguage = toAbstractByLanguage(abstracts);
+
+      console.log("Abstract by lang: ", abstractByLanguage);
+      console.log("Abstracts: ", abstracts);
+
       return normalizeThesis({
         handle,
         thesisId: null,
@@ -94,7 +130,8 @@ export const TrepoProvider = {
         author: author || "Unknown Author",
         year: year || "Unknown Date",
         publisher: publisher || "Unknown University",
-        universityCode: uniCode
+        universityCode: uniCode,
+        abstractByLanguage
       });
     });
   }

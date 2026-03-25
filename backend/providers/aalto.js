@@ -1,6 +1,6 @@
 import { normalizeThesis } from "./types.js";
 
-const toAbstractByLanguage = (abstracts) => {
+export const toAbstractByLanguage = (abstracts) => {
   if (!Array.isArray(abstracts)) return {};
 
   const byLanguage = {};
