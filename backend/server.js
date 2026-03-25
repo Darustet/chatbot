@@ -80,40 +80,85 @@ app.get("/uni/:uni", async (req, res) => {
     // Build context for provider functions
     const context = { uniCode, query, rpp, yearMin, yearNow, uniCodes };
     const provider = getProvider(uniCode);
-    const isKnownUni = validUniCodes.includes(encodeURIComponent(uniCode));
-    if (!isKnownUni) {
-        return res.status(400).json({ error: `Unknown university code: ${uniCode}` });
-    }
-    let parsed = [];
     try {
+        let normalized = [];
+
         if (provider.buildUrls) {
-            const urls = provider.buildUrls(context);
-            console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
-            console.log(`Fetching data from Master URL: ${urls[1]}`);
-            const responses = await Promise.all(urls.map( url => axios.get(url, { 
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                timeout: 15000 
+          const urls = provider.buildUrls(context);
+          console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
+          console.log(`Fetching data from Master URL: ${urls[1]}`);
 
-            })));
-            parsed = responses.flatMap(response => provider.parse(response));
-        } else {
+          const responses = await Promise.all(
+            urls.map((url) =>
+              axios.get(url, {
+                headers: {
+                  "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                },
+                timeout: 15000,
+              })
+            )
+          );
+
+          if (!Array.isArray(urls) || urls.length === 0) {
+            throw new Error(`provider.buildUrls() must return a non-empty array for ${uniCode}`);
+          }
+
+          console.log(`Fetching data from URLs:`, urls);
+
+          normalized = responses.flatMap((response, index) => {
+            const parsed = provider.parse(response);
+
+            if (!parsed) {
+              console.warn(`Provider parse returned empty result for URL index ${index}`);
+              return [];
+            }
+
+            const result = provider.normalize(parsed, { ...context });
+
+            if (!Array.isArray(result)) {
+              console.warn(`Provider normalize did not return an array for URL index ${index}`);
+              return [];
+            }
+
+            return result;
+          });
+        } else if (provider.buildUrl) {
             const fetchUrl = provider.buildUrl(context);
-            console.log(`Fetching data from URL: ${fetchUrl}`);
-            const response = await axios.get(fetchUrl, { 
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                timeout: 15000 
-            });
-            console.log("Response status:", response.status);
-            parsed = provider.parse(response);
+
+          if (Array.isArray(fetchUrl)) {
+            throw new Error(
+              `provider.buildUrl() returned an array for ${uniCode}; use buildUrls() instead`
+            );
+          }
+
+        console.log(`Fetching data from URL: ${fetchUrl}`);
+
+        const response = await axios.get(fetchUrl, {
+            headers: {
+            "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            },
+            timeout: 15000,
+        });
+
+        console.log("Response status:", response.status);
+
+        const parsed = provider.parse(response);
+        normalized = provider.normalize(parsed, { ...context });
+
+        if (!Array.isArray(normalized)) {
+            throw new Error(`provider.normalize() must return an array for ${uniCode}`);
         }
+      } else {
+        throw new Error(`Provider for ${uniCode} is missing buildUrl/buildUrls`);
+      }
 
-        const normalized = provider.normalize(parsed, { ...context});
+        const filtered = normalized.filter((t) => {
+        const thesisYear = parseInt(t?.thesis?.year, 10);
+        return Number.isFinite(thesisYear) && thesisYear >= yearMin && thesisYear <= yearNow;
+        });
 
-        const filtered = normalized.filter(t => parseInt(t.thesis.year, 10) > 2022);
         if (filtered.length === 0) {
             console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
