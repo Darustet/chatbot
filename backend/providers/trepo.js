@@ -120,9 +120,6 @@ export const TrepoProvider = {
 
         const abstractByLanguage = toAbstractByLanguage(abstracts);
 
-      console.log("Abstract by lang: ", abstractByLanguage);
-      console.log("Abstracts: ", abstracts);
-
       return normalizeThesis({
         handle,
         thesisId: null,
