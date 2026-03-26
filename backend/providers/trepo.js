@@ -24,16 +24,16 @@ export const detectAbstractLanguage = (text) => {
 
 export const TrepoProvider = {
   // Build both TREPO search URLs
-  buildUrls({ query, rpp }) {
+  buildUrls({ query, rpp, yearMin, yearNow }) {
     const encodedQuery = encodeURIComponent(query);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
 
-    const bachelorUrl = `${TREPO_BASE}discover?scope=${TREPO_BACHELOR_SCOPE}&query=${encodedQuery}&rpp=${rpp}`;
-    const masterUrl = `${TREPO_BASE}discover?scope=${TREPO_MASTER_SCOPE}&query=${encodedQuery}&rpp=${rpp}`;
+    const bachelorUrl = `${TREPO_BASE}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
+    const masterUrl = `${TREPO_BASE}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
 
     return [bachelorUrl, masterUrl];
   },
 
-  // Parse one TREPO HTML response
   parse(response) {
     const $ = cheerio.load(response.data);
     const elements = $(".artifact-description").toArray();
