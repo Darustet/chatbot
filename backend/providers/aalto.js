@@ -61,7 +61,7 @@ export const AaltoProvider = {
       if (englishPub) publisher = englishPub.value;
       else if (publisherArr[0]?.value) publisher = publisherArr[0].value;
 
-      const abstracts = item.metadata?.["dc.description.abstract"];
+      const abstracts = item.metadata?.["dc.description.abstract"]; // array of { value, language }
 
       const abstractByLanguage = toAbstractByLanguage(abstracts);
       

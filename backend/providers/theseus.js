@@ -13,7 +13,8 @@ const THESEUS_BASE = "https://www.theseus.fi/";
  * 2. Regex patterns for English (common English words)
  * 3. Fallback to "unknown"
  */
-export const detectAbstractLanguage = (text) => {
+
+const detectAbstractLanguage = (text) => {
   if (!text) return "unknown";
 
   const lower = text.toLowerCase();
@@ -37,7 +38,8 @@ export const detectAbstractLanguage = (text) => {
  * Fetch detail page and extract abstracts from DCTERMS.abstract meta tags
  * Returns abstractByLanguage or empty object on failure
  */
-export const fetchDetailPageAbstracts = async (handle) => {
+
+const fetchDetailPageAbstracts = async (handle) => {
   if (!handle) return {};
 
   try {
@@ -48,7 +50,7 @@ export const fetchDetailPageAbstracts = async (handle) => {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
-      timeout: 5000,
+      timeout: 10000,
     });
 
     const $d = cheerio.load(response.data);
@@ -82,7 +84,8 @@ export const fetchDetailPageAbstracts = async (handle) => {
 };
 
 // run tasks with concurrency limit
-export const runWithConcurrency = async (tasks, limit) => {
+
+const runWithConcurrency = async (tasks, limit) => {
   const results = [];
   for (let i = 0; i < tasks.length; i += limit) {
     const batch = tasks.slice(i, i + limit);
@@ -118,8 +121,8 @@ export const TheseusProvider = {
 
   // Normalize the parsed data into a consistent format for the frontend
   async normalize({ elements, $ }, { uniCode, uniCodes }) {
-    const CONCURRENCY_LIMIT = 5;
-		console.log("uniCode", "uniCodes", uniCode, uniCodes);
+
+    const CONCURRENCY_LIMIT = 3;
 
     // Create tasks for fetching detail page abstracts
     const tasks = elements.map(async (element) => {
