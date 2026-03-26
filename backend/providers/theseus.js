@@ -1,9 +1,98 @@
+import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
+import { toAbstractByLanguage } from "./aalto.js";
 
 const THESEUS_BASE = "https://www.theseus.fi/";
-const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
-const theseusExampleUrl2 = "https://www.theseus.fi/discover?scope=10024%2F160908&query=nokia&submit=&filtertype_0=vuosi&filter_relational_operator_0=equals&filter_0=%5B2023+TO+2025%5D&rpp=50";
+// const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
+
+
+/**
+ * Detect abstract language using:
+ * 1. Regex patterns for Finnish (äöå chars, Finnish keywords)
+ * 2. Regex patterns for English (common English words)
+ * 3. Fallback to "unknown"
+ */
+const detectAbstractLanguage = (text) => {
+  if (!text) return "unknown";
+
+  const lower = text.toLowerCase();
+
+  if (
+    /[äöå]/i.test(text) ||
+    /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia|opinnäytetyö|yhteistyö)\b/i.test(lower)
+  ) {
+    return "fi";
+  }
+
+  // English detection: common English words
+  if (/\b(the|this thesis|abstract|study|purpose|research|conclusion)\b/i.test(lower)) {
+    return "en";
+  }
+
+  return "unknown";
+};
+
+/**
+ * Fetch detail page and extract abstracts from DCTERMS.abstract meta tags
+ * Returns abstractByLanguage or empty object on failure
+ */
+const fetchDetailPageAbstracts = async (handle) => {
+  if (!handle) return {};
+
+  try {
+		// if handle is already a full URL, use it directly; otherwise, construct the full URL
+    const detailUrl = `${THESEUS_BASE}${handle.startsWith("/") ? handle.slice(1) : handle}`;
+    const response = await axios.get(detailUrl, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
+      timeout: 5000,
+    });
+
+    const $d = cheerio.load(response.data);
+    const abstracts = [];
+
+    // Extract all DCTERMS.abstract meta tags
+    const abstractMetas = $d('meta[name="DCTERMS.abstract"]').toArray();
+
+    abstractMetas.forEach((meta) => {
+      const abstractText = $d(meta).attr("content") || "";
+      if (!abstractText.trim()) return;
+
+      let detectedLang = $d(meta).attr("xml:lang");
+
+      // auto-detect if xml:lang missing or "-"
+      if (!detectedLang || detectedLang === "-") {
+        detectedLang = detectAbstractLanguage(abstractText);
+      }
+
+      abstracts.push({
+        language: detectedLang,
+        value: abstractText,
+      });
+    });
+
+    return toAbstractByLanguage(abstracts);
+  } catch (error) {
+    console.warn(`Failed to fetch detail page for ${handle}:`, error.message);
+    return {};
+  }
+};
+
+// run tasks with concurrency limit
+const runWithConcurrency = async (tasks, limit) => {
+  const results = [];
+  for (let i = 0; i < tasks.length; i += limit) {
+    const batch = tasks.slice(i, i + limit);
+    const batchResults = await Promise.all(batch);
+    results.push(...batchResults);
+  }
+  return results;
+};
+
+
 
 export const TheseusProvider = {
   // Build the API URL based on the query and filters
@@ -16,7 +105,7 @@ export const TheseusProvider = {
     if (uniCode === "all") {
       return `${THESEUS_BASE}discover?scope=10024%2F6&query=${encodedQuery}&submit=&filtertype_0=vuosi&filter_relational_operator_0=equals&filter_0=${encodedDateFilter}&rpp=${rpp}`;
     }
-    return `${THESEUS_BASE}discover?scope=${encodedUniCode}&query=${encodedQuery}&submit=&filtertype_0=vuosi&filter_relational_operator_0=equals&filter_0=${encodedDateFilter}&rpp=${rpp}`;
+    return `${THESEUS_BASE}discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=${encodedQuery}&scope=${encodedUniCode}&rpp=${rpp}`;
   },
 
   // Parse the API response to extract thesis elements
@@ -28,72 +117,54 @@ export const TheseusProvider = {
   },
 
   // Normalize the parsed data into a consistent format for the frontend
-  normalize({ elements, $ }, { uniCode, uniCodes }) {
+  async normalize({ elements, $ }, { uniCode, uniCodes }) {
+    const CONCURRENCY_LIMIT = 5;
+		console.log("uniCode", "uniCodes", uniCode, uniCodes);
 
-    return elements.map((element) => {
+    // Create tasks for fetching detail page abstracts
+    const tasks = elements.map(async (element) => {
       const el = $(element);
       // Extract title
-      const title = el.find('h4').text().trim();
-      
+      const title = el.find("h4").text().trim();
+
       // Extract handle/URL
-      const handle = el.find('a').first().attr('href') || "";
-      
+      const handle = el.find("a").first().attr("href") || "";
+
       // Extract author
       let author = "";
       const authorElem = el.find('.author, span:contains("Author")');
       if (authorElem.length) {
-          author = authorElem.text().replace(/Author:?\s*/i, '').trim();
+        author = authorElem
+          .text()
+          .replace(/Author:?\s*/i, "")
+          .trim();
       } else {
-          const text = el.text();
-          const authorMatch = text.match(/Author:\s*([^,;\n]+)/i);
-          if (authorMatch && authorMatch[1]) {
-              author = authorMatch[1].trim();
-          }
+        const text = el.text();
+        const authorMatch = text.match(/Author:\s*([^,;\n]+)/i);
+        if (authorMatch && authorMatch[1]) {
+          author = authorMatch[1].trim();
+        }
       }
-      
-      // Extract university/publisher
-      let publisher = "";
-      const publisherElem = el.find('.publisher, span:contains("Publisher")');
-      if (publisherElem.length) {
-          publisher = publisherElem.text().replace(/Publisher:?\s*/i, '').trim();
-      } else {
-          const text = el.text();
-          const publisherMatch = text.match(/Publisher:\s*([^,;\n]+)/i);
-          if (publisherMatch && publisherMatch[1]) {
-              publisher = publisherMatch[1].trim();
-          } else {
-              // Fallback: Use the university code to map to a university name
-              if (uniCode === "all") {
-                  // For "all" case, publisher might be detected elsewhere in the element
-                  const fullText = el.text();
-                  for (const uniData of uniCodes) {
-                      if (fullText.includes(uniData.uni)) {
-                          publisher = uniData.uni;
-                          break;
-                      }
-                  }
-              } else {
-                  // For specific university code
-                  const uniMatch = uniCodes.find(u => u.code === uniCode);
-                  if (uniMatch) {
-                      publisher = uniMatch.uni;
-                  }
-              }
-          }
-      }
-      
+
+      // university/publisher
+      const uniMatch = uniCodes.find((u) => u.code === encodeURIComponent(uniCode));
+      const publisher = uniMatch ? uniMatch.uni : "Unknown University";
+
       // Extract year
       let year = "";
       const yearElem = el.find('.date, span:contains("Date")');
       if (yearElem.length) {
-          year = yearElem.text().replace(/Date:?\s*/i, '').trim();
+        year = yearElem.text().replace(/Date:?\s*/i, "").trim();
       } else {
-          const text = el.text();
-          const yearMatch = text.match(/\b(19|20)\d{2}\b/);
-          if (yearMatch) {
-              year = yearMatch[0];
-          }
+        const text = el.text();
+        const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+        if (yearMatch) {
+          year = yearMatch[0];
+        }
       }
+
+      // Fetch detail page abstracts with concurrency limit
+      let abstractByLanguage = await fetchDetailPageAbstracts(handle);
 
       return normalizeThesis({
         handle,
@@ -102,8 +173,16 @@ export const TheseusProvider = {
         author: author || "Unknown Author",
         year: year || "Unknown Date",
         publisher: publisher || "Unknown University",
-        universityCode: uniCode
+        universityCode: uniCode,
+        abstractByLanguage,
       });
     });
+
+    // Run with concurrency limit to avoid hammering Theseus
+    const normalized = await runWithConcurrency(tasks, CONCURRENCY_LIMIT);
+    console.log(
+      `Normalized ${normalized.length} theses with abstact details from Theseus`
+    );
+    return normalized;
   }
 };

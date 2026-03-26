@@ -111,7 +111,7 @@ app.get("/uni/:uni", async (req, res) => {
             parsed = provider.parse(response);
         }
 
-        const normalized = provider.normalize(parsed, { ...context});
+        const normalized = await Promise.resolve(provider.normalize(parsed, { ...context}));
 
         const filtered = normalized.filter(t => parseInt(t.thesis.year, 10) > 2022);
         if (filtered.length === 0) {
