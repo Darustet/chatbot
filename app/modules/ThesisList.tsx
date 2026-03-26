@@ -103,7 +103,7 @@ export default function ThesisList() {
           // Fetch from each university with increased results per page
           const allPromises = majorUniCodes.map(async (uniCode) => {
             try {
-              const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=50`);
+              const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=${RPP}`);
               if (uniResponse.ok) {
                 const uniData = await uniResponse.json();
 

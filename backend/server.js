@@ -67,7 +67,8 @@ app.get("/uni/:uni", async (req, res) => {
     const uniCode = req.params.uni;
     const query = String(req.query.query || "nokia");
     // Results per page, capped at 200, default 30
-    const rpp = Math.min(parseInt(String(req.query.rpp || "30"), 10) || 30, 100);
+    const rpp = Math.min(parseInt(String(req.query.rpp || "30"), 10) || 30, 200);
+    console.log('Received query parameters:', { query, rpp, uniCode });
     console.log('rpp: ', rpp);
     // Minimum year filter, default 2023
     const yearMin = parseInt(String(req.query.yearMin || "2023"), 10) || 2023;

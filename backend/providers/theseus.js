@@ -48,7 +48,7 @@ const fetchDetailPageAbstracts = async (handle) => {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
-      timeout: 5000,
+      timeout: 10000,
     });
 
     const $d = cheerio.load(response.data);
@@ -118,8 +118,7 @@ export const TheseusProvider = {
 
   // Normalize the parsed data into a consistent format for the frontend
   async normalize({ elements, $ }, { uniCode, uniCodes }) {
-    const CONCURRENCY_LIMIT = 5;
-		console.log("uniCode", "uniCodes", uniCode, uniCodes);
+    const CONCURRENCY_LIMIT = 3;
 
     // Create tasks for fetching detail page abstracts
     const tasks = elements.map(async (element) => {
