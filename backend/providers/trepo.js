@@ -86,25 +86,20 @@ export const TrepoProvider = {
           }
       }
 
+      //Extract abstract
       let abstracts = [];
+        const abstractElem = el.find(".abstract").first();
 
-      const possibleAbstract =
-        el.find(".abstract").first().text().trim() ||
-        el.find('[class*="abstract"]').first().text().trim();
+      if (abstractElem.length) {
+        const abstractText = abstractElem.text().replace(/\s+/g, " ").trim();
 
-      if (possibleAbstract) {
-        abstractText = possibleAbstract;
+        if (abstractText) {
+          abstracts.push({
+            language: detectAbstractLanguage(abstractText),
+            value: abstractText,
+          });
+        }
       }
-
-      const abstracts = abstractText
-        ? [
-            {
-              language: detectAbstractLanguage(abstractText),
-              value: abstractText.replace(/\s+/g, " ").trim(),
-            },
-          ]
-        : [];
-
 
       const abstractByLanguage = toAbstractByLanguage(abstracts);
 
@@ -120,7 +115,6 @@ export const TrepoProvider = {
     });
   },
 
-  // Saa nyt sisäänsä yhdistetyn arrayn parse()-tuloksista
   normalize(parsedItems, { uniCode }) {
     return parsedItems.map((item) =>
       normalizeThesis({
