@@ -13,6 +13,7 @@ const THESEUS_BASE = "https://www.theseus.fi/";
  * 2. Regex patterns for English (common English words)
  * 3. Fallback to "unknown"
  */
+
 const detectAbstractLanguage = (text) => {
   if (!text) return "unknown";
 
@@ -37,6 +38,7 @@ const detectAbstractLanguage = (text) => {
  * Fetch detail page and extract abstracts from DCTERMS.abstract meta tags
  * Returns abstractByLanguage or empty object on failure
  */
+
 const fetchDetailPageAbstracts = async (handle) => {
   if (!handle) return {};
 
@@ -82,6 +84,7 @@ const fetchDetailPageAbstracts = async (handle) => {
 };
 
 // run tasks with concurrency limit
+
 const runWithConcurrency = async (tasks, limit) => {
   const results = [];
   for (let i = 0; i < tasks.length; i += limit) {
@@ -118,6 +121,7 @@ export const TheseusProvider = {
 
   // Normalize the parsed data into a consistent format for the frontend
   async normalize({ elements, $ }, { uniCode, uniCodes }) {
+
     const CONCURRENCY_LIMIT = 3;
 
     // Create tasks for fetching detail page abstracts

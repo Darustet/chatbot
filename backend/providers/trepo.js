@@ -1,59 +1,63 @@
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import {toAbstractByLanguage } from "./aalto.js";
+import { toAbstractByLanguage } from "./aalto.js";
 
 const TREPO_BASE = "https://trepo.tuni.fi/";
-const TREPO_BACHELOR_SCOPE = "10024/105881"
+const TREPO_BACHELOR_SCOPE = "10024/105881";
+const TREPO_MASTER_SCOPE = "10024/105882";
 
-const detectAbstractLanguage = (text) => {
+export const detectAbstractLanguage = (text) => {
+  if (!text) return "unknown";
   const lower = text.toLowerCase();
-
-  if (/[äöå]/i.test(text) || /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia)\b/i.test(lower)) {
+  if (
+    /[äöå]/i.test(text) ||
+    /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia|opinnäytetyö|yhteistyö)\b/i.test(lower)
+  ) {
     return "fi";
-  } else {
-  return "en";
   }
-
+  // English detection: common English words
+  if (/\b(the|this thesis|abstract|study|purpose|research|conclusion)\b/i.test(lower)) {
+    return "en";
+  }
   return "unknown";
 };
 
 export const TrepoProvider = {
-  // Build the API URL based on the query and filters
-  buildUrl({ query, rpp, uniCode }) {
+  // Build both TREPO search URLs
+  buildUrls({ query, rpp, yearMin, yearNow }) {
     const encodedQuery = encodeURIComponent(query);
-    return `${TREPO_BASE}discover?scope=${TREPO_BACHELOR_SCOPE}&query=+${encodedQuery}&rpp=${rpp}`;
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+
+    const bachelorUrl = `${TREPO_BASE}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
+    const masterUrl = `${TREPO_BASE}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
+
+    return [bachelorUrl, masterUrl];
   },
 
-  // Parse the API response to extract thesis elements
   parse(response) {
-    // Use cheerio to parse the HTML response and extract thesis elements
     const $ = cheerio.load(response.data);
     const elements = $(".artifact-description").toArray();
-    return { elements, $ };
-  },
-
-  // Normalize the parsed data into a consistent format for the frontend
-  normalize({ elements, $ }, { uniCode, uniCodes }) {
 
     return elements.map((element) => {
       const el = $(element);
-      // Extract title
-      const title = el.find('h4').text().trim();
 
-      // Extract handle/URL
-      const handle = el.find('a').first().attr('href') || "";
+      const title =
+        el.find("h4").first().text().trim() ||
+        el.find("a").first().text().trim() ||
+        "No Title";
 
-      // Extract author
+      const handle = el.find("a").first().attr("href") || "";
+
       let author = "";
       const authorElem = el.find('.author, span:contains("Author")');
       if (authorElem.length) {
           author = authorElem.text().replace(/Author:?\s*/i, '').trim();
       } else {
-          const text = el.text();
-          const authorMatch = text.match(/Author:\s*([^,;\n]+)/i);
-          if (authorMatch && authorMatch[1]) {
-              author = authorMatch[1].trim();
-          }
+        const text = el.text();
+        const authorMatch = text.match(/Author:\s*([^,;\n]+)/i);
+        if (authorMatch?.[1]) {
+          author = authorMatch[1].trim();
+        }
       }
 
       // Extract university/publisher
@@ -62,29 +66,11 @@ export const TrepoProvider = {
       if (publisherElem.length) {
           publisher = publisherElem.text().replace(/Publisher:?\s*/i, '').trim();
       } else {
-          const text = el.text();
-          const publisherMatch = text.match(/Publisher:\s*([^,;\n]+)/i);
-          if (publisherMatch && publisherMatch[1]) {
-              publisher = publisherMatch[1].trim();
-          } else {
-              // Fallback: Use the university code to map to a university name
-              if (uniCode === "all") {
-                  // For "all" case, publisher might be detected elsewhere in the element
-                  const fullText = el.text();
-                  for (const uniData of uniCodes) {
-                      if (fullText.includes(uniData.uni)) {
-                          publisher = uniData.uni;
-                          break;
-                      }
-                  }
-              } else {
-                  // For specific university code
-                  const uniMatch = uniCodes.find(u => u.code === uniCode);
-                  if (uniMatch) {
-                      publisher = uniMatch.uni;
-                  }
-              }
-          }
+        const text = el.text();
+        const publisherMatch = text.match(/Publisher:\s*([^,;\n]+)/i);
+        if (publisherMatch?.[1]) {
+          publisher = publisherMatch[1].trim();
+        }
       }
 
       // Extract year
@@ -100,36 +86,47 @@ export const TrepoProvider = {
           }
       }
 
-      const abstracts = [];
+      //Extract abstract
+      let abstracts = [];
         const abstractElem = el.find(".abstract").first();
 
-        if (abstractElem.length) {
-          const abstractText = abstractElem
-            .text()
-            .replace(/\.\.\./g, "")
-            .replace(/\s+/g, " ")
-            .trim();
+      if (abstractElem.length) {
+        const abstractText = abstractElem.text().replace(/\s+/g, " ").trim();
 
-          if (abstractText) {
-            abstracts.push({
-              language: detectAbstractLanguage(abstractText),
-              value: abstractText,
-            });
-          }
+        if (abstractText) {
+          abstracts.push({
+            language: detectAbstractLanguage(abstractText),
+            value: abstractText,
+          });
         }
+      }
 
-        const abstractByLanguage = toAbstractByLanguage(abstracts);
+      const abstractByLanguage = toAbstractByLanguage(abstracts);
 
-      return normalizeThesis({
+      return {
         handle,
         thesisId: null,
-        title: title || "No Title",
+        title,
         author: author || "Unknown Author",
         year: year || "Unknown Date",
-        publisher: publisher || "Unknown University",
-        universityCode: uniCode,
-        abstractByLanguage
-      });
+        publisher: publisher || "Tampere University",
+        abstractByLanguage,
+      };
     });
-  }
+  },
+
+  normalize(parsedItems, { uniCode }) {
+    return parsedItems.map((item) =>
+      normalizeThesis({
+        handle: item.handle,
+        thesisId: item.thesisId,
+        title: item.title,
+        author: item.author,
+        year: item.year,
+        publisher: item.publisher,
+        universityCode: uniCode,
+        abstractByLanguage: item.abstractByLanguage,
+      })
+    );
+  },
 };

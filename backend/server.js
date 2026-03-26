@@ -75,7 +75,7 @@ app.get("/uni/:uni", async (req, res) => {
     // Current year for filtering
     const d = new Date();
     const yearNow = d.getFullYear();
-    
+
     console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearNow=${yearNow})`);
 
     // Build context for provider functions
@@ -91,22 +91,22 @@ app.get("/uni/:uni", async (req, res) => {
             const urls = provider.buildUrls(context);
             console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
             console.log(`Fetching data from Master URL: ${urls[1]}`);
-            const responses = await Promise.all(urls.map( url => axios.get(url, { 
+            const responses = await Promise.all(urls.map( url => axios.get(url, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 },
-                timeout: 15000 
+                timeout: 15000
 
             })));
             parsed = responses.flatMap(response => provider.parse(response));
         } else {
             const fetchUrl = provider.buildUrl(context);
             console.log(`Fetching data from URL: ${fetchUrl}`);
-            const response = await axios.get(fetchUrl, { 
+            const response = await axios.get(fetchUrl, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 },
-                timeout: 15000 
+                timeout: 15000
             });
             console.log("Response status:", response.status);
             parsed = provider.parse(response);
