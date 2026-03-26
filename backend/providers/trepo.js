@@ -6,19 +6,22 @@ const TREPO_BASE = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
 const TREPO_MASTER_SCOPE = "10024/105882";
 
-const detectAbstractLanguage = (text) => {
+export const detectAbstractLanguage = (text) => {
+  if (!text) return "unknown";
   const lower = text.toLowerCase();
-
-  if (/[äöå]/i.test(text) || /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia)\b/i.test(lower)) {
+  if (
+    /[äöå]/i.test(text) ||
+    /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia|opinnäytetyö|yhteistyö)\b/i.test(lower)
+  ) {
     return "fi";
   }
-
-  if (/\b(the|this thesis|abstract|study|purpose)\b/i.test(lower)) {
+  // English detection: common English words
+  if (/\b(the|this thesis|abstract|study|purpose|research|conclusion)\b/i.test(lower)) {
     return "en";
   }
-
   return "unknown";
 };
+
 export const TrepoProvider = {
   // Build both TREPO search URLs
   buildUrls({ query, rpp }) {
@@ -38,117 +41,99 @@ export const TrepoProvider = {
     return { elements, $ };
   },
 
-  // Normalize one parsed TREPO response
-  normalize({ elements, $ } = {}, { uniCode, uniCodes }) {
-    if (!Array.isArray(elements) || typeof $ !== "function") {
-      console.warn("TREPO normalize got invalid input:", { elementsType: typeof elements, hasDollar: typeof $ });
-      return [];
-    }
+  // Parse the API response to extract thesis elements
+  parse(response) {
+    // Use cheerio to parse the HTML response and extract thesis elements
+    const $ = cheerio.load(response.data);
+    const elements = $(".artifact-description").toArray();
+    return { elements, $ };
+  },
+
+  // Normalize the parsed data into a consistent format for the frontend
+  normalize({ elements, $ }, { uniCode, uniCodes }) {
 
     return elements.map((element) => {
       const el = $(element);
+      // Extract title
+      const title = el.find('h4').text().trim();
 
-      // Title
-      const title =
-        el.find("h4 a").first().text().trim() ||
-        el.find("h4").first().text().trim() ||
-        "No Title";
+      // Extract handle/URL
+      const handle = el.find('a').first().attr('href') || "";
 
-      // Handle
-      let handle = el.find("h4 a, a").first().attr("href") || "";
-      if (handle && handle.startsWith("/")) {
-        handle = handle;
-      }
-
-      // Whole text fallback source
-      const fullText = el.text().replace(/\s+/g, " ").trim();
-
-      // Author
+      // Extract author
       let author = "";
-      const authorElem = el.find(
-        '.author, span:contains("Author"), span:contains("Tekijä")'
-      );
-
+      const authorElem = el.find('.author, span:contains("Author")');
       if (authorElem.length) {
-        author = authorElem
-          .first()
-          .text()
-          .replace(/^(Author|Tekijä):?\s*/i, "")
-          .trim();
+          author = authorElem.text().replace(/Author:?\s*/i, '').trim();
+      } else {
+          const text = el.text();
+          const authorMatch = text.match(/Author:\s*([^,;\n]+)/i);
+          if (authorMatch && authorMatch[1]) {
+              author = authorMatch[1].trim();
+          }
       }
 
-      if (!author) {
-        const authorMatch = fullText.match(/(?:Author|Tekijä):\s*([^|;]+)/i);
-        if (authorMatch?.[1]) {
-          author = authorMatch[1].trim();
-        }
-      }
-
-      // Publisher
+      // Extract university/publisher
       let publisher = "";
-      const publisherElem = el.find(
-        '.publisher, span:contains("Publisher"), span:contains("Julkaisija")'
-      );
-
+      const publisherElem = el.find('.publisher, span:contains("Publisher")');
       if (publisherElem.length) {
-        publisher = publisherElem
-          .first()
-          .text()
-          .replace(/^(Publisher|Julkaisija):?\s*/i, "")
-          .trim();
+          publisher = publisherElem.text().replace(/Publisher:?\s*/i, '').trim();
+      } else {
+          const text = el.text();
+          const publisherMatch = text.match(/Publisher:\s*([^,;\n]+)/i);
+          if (publisherMatch && publisherMatch[1]) {
+              publisher = publisherMatch[1].trim();
+          } else {
+              // Fallback: Use the university code to map to a university name
+              if (uniCode === "all") {
+                  // For "all" case, publisher might be detected elsewhere in the element
+                  const fullText = el.text();
+                  for (const uniData of uniCodes) {
+                      if (fullText.includes(uniData.uni)) {
+                          publisher = uniData.uni;
+                          break;
+                      }
+                  }
+              } else {
+                  // For specific university code
+                  const uniMatch = uniCodes.find(u => u.code === uniCode);
+                  if (uniMatch) {
+                      publisher = uniMatch.uni;
+                  }
+              }
+          }
       }
 
-      if (!publisher) {
-        const publisherMatch = fullText.match(/(?:Publisher|Julkaisija):\s*([^|;]+)/i);
-        if (publisherMatch?.[1]) {
-          publisher = publisherMatch[1].trim();
-        }
-      }
-
-      if (!publisher) {
-        const uniMatch = uniCodes.find((u) => u.code === uniCode);
-        if (uniMatch) {
-          publisher = uniMatch.uni;
-        } else {
-          publisher = "Tampere university";
-        }
-      }
-
-      // Year
+      // Extract year
       let year = "";
-      const yearElem = el.find(
-        '.date, span:contains("Date"), span:contains("Päivämäärä")'
-      );
-
+      const yearElem = el.find('.date, span:contains("Date")');
       if (yearElem.length) {
-        year = yearElem
-          .first()
-          .text()
-          .replace(/^(Date|Päivämäärä):?\s*/i, "")
-          .trim();
+          year = yearElem.text().replace(/Date:?\s*/i, '').trim();
+      } else {
+          const text = el.text();
+          const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+          if (yearMatch) {
+              year = yearMatch[0];
+          }
       }
 
-      if (!year) {
-        const yearMatch = fullText.match(/\b(19|20)\d{2}\b/);
-        if (yearMatch) {
-          year = yearMatch[0];
-        }
-      }
-
-      // Abstract
       const abstracts = [];
-      const abstractElem = el.find(".abstract").first();
 
-      if (abstractElem.length) {
-        const abstractText = abstractElem.text().replace(/\s+/g, " ").trim();
+      $('meta[name="DCTERMS.abstract"]').each((i, meta) => {
+        const value = $(meta).attr("content")?.trim();
+        if (!value) return;
 
-        if (abstractText) {
-          abstracts.push({
-            language: detectAbstractLanguage(abstractText),
-            value: abstractText,
-          });
-        }
-      }
+        const language = $('meta[name="DC.language"]').eq(i).attr("content")?.trim() ||
+        detectAbstractLanguage(value);
+
+        abstracts.push({
+            language,
+            value: value
+            .replace(/&#xD;|&#xA;/g, " ")
+            .replace(/\s+/g, " ")
+            .trim(),
+        });
+      });
 
       const abstractByLanguage = toAbstractByLanguage(abstracts);
 
@@ -158,13 +143,13 @@ export const TrepoProvider = {
       return normalizeThesis({
         handle,
         thesisId: null,
-        title: author ? title.replace(author, "").trim() : title,
+        title: title || "No Title",
         author: author || "Unknown Author",
         year: year || "Unknown Date",
-        publisher: publisher || "Tampere university",
+        publisher: publisher || "Unknown University",
         universityCode: uniCode,
-        abstractByLanguage,
+        abstractByLanguage
       });
     });
-  },
+  }
 };
