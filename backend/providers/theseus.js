@@ -14,7 +14,7 @@ const THESEUS_BASE = "https://www.theseus.fi/";
  * 3. Fallback to "unknown"
  */
 
-const detectAbstractLanguage = (text) => {
+export const detectAbstractLanguage = (text) => {
   if (!text) return "unknown";
 
   const lower = text.toLowerCase();
@@ -85,7 +85,7 @@ const fetchDetailPageAbstracts = async (handle) => {
 
 // run tasks with concurrency limit
 
-const runWithConcurrency = async (tasks, limit) => {
+export const runWithConcurrency = async (tasks, limit) => {
   const results = [];
   for (let i = 0; i < tasks.length; i += limit) {
     const batch = tasks.slice(i, i + limit);
