@@ -1,38 +1,16 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { toAbstractByLanguage } from "./aalto.js";
+import {
+  detectAbstractLanguage,
+  runWithConcurrency,
+  toAbstractByLanguage,
+} from "./helpers.js";
 
 const THESEUS_BASE = "https://www.theseus.fi/";
 // const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
 
 
-/**
- * Detect abstract language using:
- * 1. Regex patterns for Finnish (äöå chars, Finnish keywords)
- * 2. Regex patterns for English (common English words)
- * 3. Fallback to "unknown"
- */
-
-const detectAbstractLanguage = (text) => {
-  if (!text) return "unknown";
-
-  const lower = text.toLowerCase();
-
-  if (
-    /[äöå]/i.test(text) ||
-    /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia|opinnäytetyö|yhteistyö)\b/i.test(lower)
-  ) {
-    return "fi";
-  }
-
-  // English detection: common English words
-  if (/\b(the|this thesis|abstract|study|purpose|research|conclusion)\b/i.test(lower)) {
-    return "en";
-  }
-
-  return "unknown";
-};
 
 /**
  * Fetch detail page and extract abstracts from DCTERMS.abstract meta tags
@@ -82,20 +60,6 @@ const fetchDetailPageAbstracts = async (handle) => {
     return {};
   }
 };
-
-// run tasks with concurrency limit
-
-const runWithConcurrency = async (tasks, limit) => {
-  const results = [];
-  for (let i = 0; i < tasks.length; i += limit) {
-    const batch = tasks.slice(i, i + limit);
-    const batchResults = await Promise.all(batch);
-    results.push(...batchResults);
-  }
-  return results;
-};
-
-
 
 export const TheseusProvider = {
   // Build the API URL based on the query and filters

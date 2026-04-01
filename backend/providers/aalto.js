@@ -1,18 +1,5 @@
 import { normalizeThesis } from "./types.js";
-
-export const toAbstractByLanguage = (abstracts) => {
-  if (!Array.isArray(abstracts)) return {};
-
-  const byLanguage = {};
-  for (const abs of abstracts) {
-    const lang = String(abs.language || "unknown").toLowerCase();
-    const text = String(abs.value || "").trim();
-    if (text) {
-      byLanguage[lang] = text;
-    }
-  }
-  return byLanguage;
-};
+import { toAbstractByLanguage } from "./helpers.js";
 
 // Link for Aalto doc api
 const AALTO_API_BASE = "https://aaltodoc.aalto.fi/server/api";
@@ -20,12 +7,6 @@ const AALTO_BACHELOR_SCOPE = "4e50a35c-f00f-49ae-93b2-3223353681ec"; // size=20 
 const AALTO_MASTER_SCOPE = "663a76cb-af53-4943-a224-19e055302c24";
 
 export const AaltoProvider = {
-  // Build the API URL based on the query and filters
-  // buildUrl: function({ query, rpp, yearMin, yearNow }) {
-  //   const encodedQuery = encodeURIComponent(query);
-  //   const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
-  //   return `${AALTO_API_BASE}/discover/search/objects?scope=${AALTO_BACHELOR_SCOPE}&query=${encodedQuery}&configuration=default&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
-  // },
 
   buildUrls: function({ query, rpp, yearMin, yearNow }) {
     const encodedQuery = encodeURIComponent(query);
@@ -53,9 +34,9 @@ export const AaltoProvider = {
       const dateIssuedArr = item.metadata?.["dc.date.issued"] ?? [];
       const publisherArr = item.metadata?.["dc.contributor"] ?? [];
 
-      const author = authorArr[0]?.value ?? "Unknown Author";
+      const author = authorArr.map(a => a.value).join("; ") || "Unknown Author";
       const year = dateIssuedArr[0]?.value ?? "Unknown Date";
-      let publisher = "Unknown University";
+      let publisher = "";
 
       const englishPub = publisherArr.find(p => p.language === "en");
       if (englishPub) publisher = englishPub.value;
@@ -71,7 +52,7 @@ export const AaltoProvider = {
         title,
         author,
         year,
-        publisher,
+        publisher: publisher || "Aalto University",
         universityCode: "AALTO",
         abstractByLanguage,
       });

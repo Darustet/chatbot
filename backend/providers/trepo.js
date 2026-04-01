@@ -1,26 +1,10 @@
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { toAbstractByLanguage } from "./aalto.js";
+import { detectAbstractLanguage, toAbstractByLanguage } from "./helpers.js";
 
 const TREPO_BASE = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
 const TREPO_MASTER_SCOPE = "10024/105882";
-
-export const detectAbstractLanguage = (text) => {
-  if (!text) return "unknown";
-  const lower = text.toLowerCase();
-  if (
-    /[äöå]/i.test(text) ||
-    /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia|opinnäytetyö|yhteistyö)\b/i.test(lower)
-  ) {
-    return "fi";
-  }
-  // English detection: common English words
-  if (/\b(the|this thesis|abstract|study|purpose|research|conclusion)\b/i.test(lower)) {
-    return "en";
-  }
-  return "unknown";
-};
 
 export const TrepoProvider = {
   // Build both TREPO search URLs
