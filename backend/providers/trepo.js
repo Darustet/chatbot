@@ -1,25 +1,58 @@
+import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
 import { toAbstractByLanguage } from "./aalto.js";
+import { detectAbstractLanguage, runWithConcurrency } from "./theseus.js";
 
 const TREPO_BASE = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
 const TREPO_MASTER_SCOPE = "10024/105882";
 
-export const detectAbstractLanguage = (text) => {
-  if (!text) return "unknown";
-  const lower = text.toLowerCase();
-  if (
-    /[äöå]/i.test(text) ||
-    /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia|opinnäytetyö|yhteistyö)\b/i.test(lower)
-  ) {
-    return "fi";
+/**
+ * Fetch detail page and extract full abstracts from DCTERMS.abstract meta tags
+ */
+const fetchDetailPageAbstracts = async (handle) => {
+  if (!handle) return {};
+
+  try {
+    const detailUrl = handle.startsWith("http")
+      ? handle
+      : `${TREPO_BASE}${handle.startsWith("/") ? handle.slice(1) : handle}`;
+
+    const response = await axios.get(detailUrl, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
+      timeout: 10000,
+    });
+
+    const $d = cheerio.load(response.data);
+    const abstracts = [];
+
+    const abstractMetas = $d('meta[name="DCTERMS.abstract"]').toArray();
+
+    abstractMetas.forEach((meta) => {
+      const abstractText = ($d(meta).attr("content") || "").trim();
+      if (!abstractText) return;
+
+      let detectedLang = $d(meta).attr("xml:lang");
+
+      if (!detectedLang || detectedLang === "-") {
+        detectedLang = detectAbstractLanguage(abstractText);
+      }
+
+      abstracts.push({
+        language: detectedLang,
+        value: abstractText,
+      });
+    });
+
+    return toAbstractByLanguage(abstracts);
+  } catch (error) {
+    console.warn(`Failed to fetch TREPO detail page for ${handle}:`, error.message);
+    return {};
   }
-  // English detection: common English words
-  if (/\b(the|this thesis|abstract|study|purpose|research|conclusion)\b/i.test(lower)) {
-    return "en";
-  }
-  return "unknown";
 };
 
 export const TrepoProvider = {
@@ -37,8 +70,20 @@ export const TrepoProvider = {
   parse(response) {
     const $ = cheerio.load(response.data);
     const elements = $(".artifact-description").toArray();
+    return { elements, $ };
+  },
 
-    return elements.map((element) => {
+  async normalize(parsedInput, { uniCode }) {
+  const CONCURRENCY_LIMIT = 3;
+
+  const parsedList = Array.isArray(parsedInput) ? parsedInput : [parsedInput];
+
+  const tasks = parsedList.flatMap((parsed) => {
+    if (!parsed?.elements || !parsed?.$) return [];
+
+    const { elements, $ } = parsed;
+
+    return elements.map(async (element) => {
       const el = $(element);
 
       const title =
@@ -79,54 +124,29 @@ export const TrepoProvider = {
       if (yearElem.length) {
           year = yearElem.text().replace(/Date:?\s*/i, '').trim();
       } else {
-          const text = el.text();
-          const yearMatch = text.match(/\b(19|20)\d{2}\b/);
-          if (yearMatch) {
-              year = yearMatch[0];
-          }
-      }
-
-      //Extract abstract
-      let abstracts = [];
-        const abstractElem = el.find(".abstract").first();
-
-      if (abstractElem.length) {
-        const abstractText = abstractElem.text().replace(/\s+/g, " ").trim();
-
-        if (abstractText) {
-          abstracts.push({
-            language: detectAbstractLanguage(abstractText),
-            value: abstractText,
-          });
+        const text = el.text();
+        const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+        if (yearMatch) {
+          year = yearMatch[0];
         }
       }
 
-      const abstractByLanguage = toAbstractByLanguage(abstracts);
+      //Extract abstract
+      const abstractByLanguage = await fetchDetailPageAbstracts(handle);
 
-      return {
+      return normalizeThesis({
         handle,
         thesisId: null,
         title,
         author: author || "Unknown Author",
         year: year || "Unknown Date",
         publisher: publisher || "Tampere University",
-        abstractByLanguage,
-      };
-    });
-  },
-
-  normalize(parsedItems, { uniCode }) {
-    return parsedItems.map((item) =>
-      normalizeThesis({
-        handle: item.handle,
-        thesisId: item.thesisId,
-        title: item.title,
-        author: item.author,
-        year: item.year,
-        publisher: item.publisher,
         universityCode: uniCode,
-        abstractByLanguage: item.abstractByLanguage,
-      })
-    );
-  },
+        abstractByLanguage,
+      });
+    });
+  });
+
+  return await runWithConcurrency(tasks, CONCURRENCY_LIMIT);
+}
 };
