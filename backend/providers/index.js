@@ -2,6 +2,7 @@ import { AaltoProvider } from "./aalto.js";
 import { TheseusProvider } from "./theseus.js";
 import { HeldaProvider } from "./helda.js";
 import {TrepoProvider} from "./trepo.js";
+import { OuluRepoProvider } from "./oulurepo.js";
 
 /**
  * Provider map to associate university codes with their respective providers.
@@ -15,7 +16,8 @@ import {TrepoProvider} from "./trepo.js";
 export const providerMap = {
   AALTO: AaltoProvider,
   HELDA: HeldaProvider,
-  TREPO: TrepoProvider
+  TREPO: TrepoProvider,
+  OULUREPO: OuluRepoProvider
 };
 
 export function getProvider(uniCode) {

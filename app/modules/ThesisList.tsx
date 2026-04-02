@@ -39,6 +39,7 @@ const uniCodes = [
   {"uni": "Aalto", "code": "AALTO"},
   {"uni": "Helsinki", "code": "HELDA"},
   {"uni": "Tampere University", "code": "TREPO"},
+  {"uni": "Oulu University", "code": "OULUREPO"},
 ];
 
 const API_BASE_URL = config.API_BASE_URL;
@@ -98,6 +99,7 @@ export default function ThesisList() {
             "AALTO",           // Aalto University
             "TREPO",           // Tampere University
             "HELDA",           // University of Helsinki
+            "OULUREPO",        // Oulu University
           ];
 
           // Fetch from each university with increased results per page
@@ -206,6 +208,8 @@ export default function ThesisList() {
           link = `https://aaltodoc.aalto.fi${handle}`;
         } else if (universityCode === "HELDA") {
           link = `https://helda.helsinki.fi${handle}`;
+        } else if (universityCode === "OULUREPO") {
+          link = `https://oulurepo.oulu.fi${handle}`;
         } else {
           link = `https://theseus.fi${handle}`;
         }
