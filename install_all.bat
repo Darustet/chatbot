@@ -15,7 +15,7 @@ py -3.11 --version >nul 2>&1
 if errorlevel 1 (
     echo ERROR: Python 3.11 is not installed.
     echo Please install Python 3.11 and try again.
-    pause   
+    pause
     exit /b 1
 )
 
