@@ -39,7 +39,7 @@ export const detectAbstractLanguage = (text) => {
  * Returns abstractByLanguage or empty object on failure
  */
 
-const fetchDetailPageAbstracts = async (handle) => {
+export const fetchDetailPageAbstracts = async (handle) => {
   if (!handle) return {};
 
   try {

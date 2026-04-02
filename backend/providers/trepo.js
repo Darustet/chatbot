@@ -4,20 +4,20 @@ import { normalizeThesis } from "./types.js";
 import { toAbstractByLanguage } from "./aalto.js";
 import { detectAbstractLanguage, runWithConcurrency } from "./theseus.js";
 
-const TREPO_BASE = "https://trepo.tuni.fi/";
+const BASE_URL = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
 const TREPO_MASTER_SCOPE = "10024/105882";
 
 /**
  * Fetch detail page and extract full abstracts from DCTERMS.abstract meta tags
  */
-const fetchDetailPageAbstracts = async (handle) => {
+export const fetchDetailPageAbstracts = async (handle) => {
   if (!handle) return {};
 
   try {
     const detailUrl = handle.startsWith("http")
       ? handle
-      : `${TREPO_BASE}${handle.startsWith("/") ? handle.slice(1) : handle}`;
+      : `${BASE_URL}${handle.startsWith("/") ? handle.slice(1) : handle}`;
 
     const response = await axios.get(detailUrl, {
       headers: {
@@ -61,8 +61,8 @@ export const TrepoProvider = {
     const encodedQuery = encodeURIComponent(query);
     const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
 
-    const bachelorUrl = `${TREPO_BASE}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
-    const masterUrl = `${TREPO_BASE}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_MASTER_SCOPE}&rpp=${rpp}`;
+    const bachelorUrl = `${BASE_URL}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
+    const masterUrl = `${BASE_URL}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_MASTER_SCOPE}&rpp=${rpp}`;
 
     return [bachelorUrl, masterUrl];
   },
