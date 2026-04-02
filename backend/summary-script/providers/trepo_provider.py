@@ -84,7 +84,6 @@ def _extract_abstract_from_meta(soup: BeautifulSoup) -> str | None:
         if any(key in name for key in (
             "dc.description.abstract",
             "dcterms.abstract",
-            "citation_abstract",
         )):
             cleaned = _clean_text(content)
             if len(cleaned) > 40:
