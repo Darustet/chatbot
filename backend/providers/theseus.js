@@ -88,8 +88,8 @@ export const TheseusProvider = {
 
     const CONCURRENCY_LIMIT = 3;
 
-    // Create tasks for fetching detail page abstracts
-    const tasks = elements.map(async (element) => {
+    // Create lazy task functions so requests start only when each batch is executed.
+    const tasks = elements.map((element) => async () => {
       const el = $(element);
       // Extract title
       const title = el.find("h4").text().trim();
@@ -131,7 +131,7 @@ export const TheseusProvider = {
       }
 
       // Fetch detail page abstracts with concurrency limit
-      let abstractByLanguage = await fetchDetailPageAbstracts(handle);
+      const abstractByLanguage = await fetchDetailPageAbstracts(handle);
 
       return normalizeThesis({
         handle,

@@ -82,7 +82,7 @@ export const TrepoProvider = {
 
     const { elements, $ } = parsed;
 
-    return elements.map(async (element) => {
+    return elements.map((element) => async () => {
       const el = $(element);
 
       const title =

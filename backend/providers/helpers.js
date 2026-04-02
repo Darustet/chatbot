@@ -34,10 +34,13 @@ export const detectAbstractLanguage = (text) => {
 };
 
 export const runWithConcurrency = async (tasks, limit) => {
+  const safeLimit = Math.max(1, Number(limit) || 1);
   const results = [];
-  for (let i = 0; i < tasks.length; i += limit) {
-    const batch = tasks.slice(i, i + limit);
-    const batchResults = await Promise.all(batch);
+  for (let i = 0; i < tasks.length; i += safeLimit) {
+    const batch = tasks.slice(i, i + safeLimit);
+    const batchResults = await Promise.all(
+      batch.map((task) => (typeof task === "function" ? task() : task))
+    );
     results.push(...batchResults);
   }
   return results;
@@ -46,11 +49,16 @@ export const runWithConcurrency = async (tasks, limit) => {
 // Deduplicate by title and author
 export const deduplicate = (theses) => {
   const seen = new Map();
-  for (const thesis of theses) {
-    const key = `${thesis.thesis.title.toLowerCase()}|${thesis.thesis.author.toLowerCase()}`;
+  for (const thesis of theses || []) {
+    if (!thesis?.thesis) continue;
+
+    const title = String(thesis.thesis.title || "").toLowerCase();
+    const author = String(thesis.thesis.author || "").toLowerCase();
+    const key = `${title}|${author}`;
+
     if (!seen.has(key)) {
-        seen.set(key, thesis);
+      seen.set(key, thesis);
     }
-  }            
+  }
   return Array.from(seen.values());
 };
