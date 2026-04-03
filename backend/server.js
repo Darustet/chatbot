@@ -5,6 +5,7 @@ import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
+import { deduplicate } from "./providers/helpers.js";
 
 const app = express();
 
@@ -114,14 +115,15 @@ app.get("/uni/:uni", async (req, res) => {
 
         const normalized = await Promise.resolve(provider.normalize(parsed, { ...context}));
 
-        const filtered = normalized.filter(t => parseInt(t.thesis.year, 10) > 2022);
+        const deduplicated = deduplicate(normalized);
+
+        const filtered = deduplicated.filter(t => parseInt(t.thesis.year, 10) > 2022);
         if (filtered.length === 0) {
             console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
         }
 
         console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
-        
 
         const thesesWithScores = filtered.map((t) => {
             const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);

@@ -1,38 +1,16 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { toAbstractByLanguage } from "./aalto.js";
+import {
+  detectAbstractLanguage,
+  runWithConcurrency,
+  toAbstractByLanguage,
+} from "./helpers.js";
 
 const THESEUS_BASE = "https://www.theseus.fi/";
 // const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
 
 
-/**
- * Detect abstract language using:
- * 1. Regex patterns for Finnish (äöå chars, Finnish keywords)
- * 2. Regex patterns for English (common English words)
- * 3. Fallback to "unknown"
- */
-
-export const detectAbstractLanguage = (text) => {
-  if (!text) return "unknown";
-
-  const lower = text.toLowerCase();
-
-  if (
-    /[äöå]/i.test(text) ||
-    /\b(tutkielma|tarkoitus|käyttäjäkokemus|selvittää|suosituksia|opinnäytetyö|yhteistyö)\b/i.test(lower)
-  ) {
-    return "fi";
-  }
-
-  // English detection: common English words
-  if (/\b(the|this thesis|abstract|study|purpose|research|conclusion)\b/i.test(lower)) {
-    return "en";
-  }
-
-  return "unknown";
-};
 
 /**
  * Fetch detail page and extract abstracts from DCTERMS.abstract meta tags
@@ -83,20 +61,6 @@ export const fetchDetailPageAbstracts = async (handle) => {
   }
 };
 
-// run tasks with concurrency limit
-
-export const runWithConcurrency = async (tasks, limit) => {
-  const results = [];
-  for (let i = 0; i < tasks.length; i += limit) {
-    const batch = tasks.slice(i, i + limit);
-    const batchResults = await Promise.all(batch);
-    results.push(...batchResults);
-  }
-  return results;
-};
-
-
-
 export const TheseusProvider = {
   // Build the API URL based on the query and filters
   buildUrl({ query, rpp, uniCode, yearMin, yearNow }) {
@@ -124,8 +88,8 @@ export const TheseusProvider = {
 
     const CONCURRENCY_LIMIT = 3;
 
-    // Create tasks for fetching detail page abstracts
-    const tasks = elements.map(async (element) => {
+    // Create lazy task functions so requests start only when each batch is executed.
+    const tasks = elements.map((element) => async () => {
       const el = $(element);
       // Extract title
       const title = el.find("h4").text().trim();
@@ -167,7 +131,7 @@ export const TheseusProvider = {
       }
 
       // Fetch detail page abstracts with concurrency limit
-      let abstractByLanguage = await fetchDetailPageAbstracts(handle);
+      const abstractByLanguage = await fetchDetailPageAbstracts(handle);
 
       return normalizeThesis({
         handle,

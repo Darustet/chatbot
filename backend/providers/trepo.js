@@ -1,8 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { toAbstractByLanguage } from "./aalto.js";
-import { detectAbstractLanguage, runWithConcurrency } from "./theseus.js";
+import { detectAbstractLanguage, toAbstractByLanguage, runWithConcurrency } from "./helpers.js";
 
 const BASE_URL = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
@@ -83,7 +82,7 @@ export const TrepoProvider = {
 
     const { elements, $ } = parsed;
 
-    return elements.map(async (element) => {
+    return elements.map((element) => async () => {
       const el = $(element);
 
       const title =
