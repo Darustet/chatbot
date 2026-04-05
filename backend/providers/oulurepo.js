@@ -1,6 +1,10 @@
+import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { fetchDetailPageAbstracts, runWithConcurrency } from "./theseus.js";
+import {
+  fetchDetailPageAbstracts,
+  runWithConcurrency
+} from "./helpers.js";
 
 const BASE_URL = "https://oulurepo.oulu.fi/";
 const OULUREPO_SCOPE = "10024/1102";
@@ -8,12 +12,10 @@ const OULUREPO_SCOPE = "10024/1102";
 export const OuluRepoProvider = {
   buildUrl({ query, rpp, yearMin, yearNow }) {
     const encodedQuery = encodeURIComponent(query);
-    const encodedScope = encodeURIComponent(OULUREPO_SCOPE);
     const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
 
-    return [
-      `${BASE_URL}discover?query=${encodedQuery}&scope=${encodedScope}&rpp=${rpp}&filtertype=dateIssued&filter_relational_operator=equals&filter=${encodedDateFilter}`
-    ];
+    return `${BASE_URL}discover?query=${encodedQuery}&scope=${OULUREPO_SCOPE}&filtertype=dateIssued&filter_relational_operator=equals&filter=${encodedDateFilter}&rpp=${rpp}`
+   ;
   },
 
   parse(response) {
@@ -48,6 +50,7 @@ export const OuluRepoProvider = {
         }
       }
 
+      // Extract year
       let year = "";
       const yearElem = el.find('.date, span:contains("Date")');
       if (yearElem.length) {
@@ -61,9 +64,7 @@ export const OuluRepoProvider = {
         }
       }
 
-      const abstractByLanguage = handle
-        ? await fetchDetailPageAbstracts(handle)
-        : {};
+      const abstractByLanguage = await fetchDetailPageAbstracts(handle,BASE_URL);
 
       return normalizeThesis({
         handle,
