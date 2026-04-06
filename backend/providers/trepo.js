@@ -1,58 +1,11 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { detectAbstractLanguage, toAbstractByLanguage, runWithConcurrency } from "./helpers.js";
+import { fetchDetailPageAbstracts, runWithConcurrency } from "./helpers.js";
 
-const TREPO_BASE = "https://trepo.tuni.fi/";
+const BASE_URL = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
 const TREPO_MASTER_SCOPE = "10024/105882";
-
-/**
- * Fetch detail page and extract full abstracts from DCTERMS.abstract meta tags
- */
-const fetchDetailPageAbstracts = async (handle) => {
-  if (!handle) return {};
-
-  try {
-    const detailUrl = handle.startsWith("http")
-      ? handle
-      : `${TREPO_BASE}${handle.startsWith("/") ? handle.slice(1) : handle}`;
-
-    const response = await axios.get(detailUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-      timeout: 10000,
-    });
-
-    const $d = cheerio.load(response.data);
-    const abstracts = [];
-
-    const abstractMetas = $d('meta[name="DCTERMS.abstract"]').toArray();
-
-    abstractMetas.forEach((meta) => {
-      const abstractText = ($d(meta).attr("content") || "").trim();
-      if (!abstractText) return;
-
-      let detectedLang = $d(meta).attr("xml:lang");
-
-      if (!detectedLang || detectedLang === "-") {
-        detectedLang = detectAbstractLanguage(abstractText);
-      }
-
-      abstracts.push({
-        language: detectedLang,
-        value: abstractText,
-      });
-    });
-
-    return toAbstractByLanguage(abstracts);
-  } catch (error) {
-    console.warn(`Failed to fetch TREPO detail page for ${handle}:`, error.message);
-    return {};
-  }
-};
 
 export const TrepoProvider = {
   // Build both TREPO search URLs
@@ -60,8 +13,8 @@ export const TrepoProvider = {
     const encodedQuery = encodeURIComponent(query);
     const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
 
-    const bachelorUrl = `${TREPO_BASE}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
-    const masterUrl = `${TREPO_BASE}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_MASTER_SCOPE}&rpp=${rpp}`;
+    const bachelorUrl = `${BASE_URL}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
+    const masterUrl = `${BASE_URL}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_MASTER_SCOPE}&rpp=${rpp}`;
 
     return [bachelorUrl, masterUrl];
   },
@@ -131,7 +84,7 @@ export const TrepoProvider = {
       }
 
       //Extract abstract
-      const abstractByLanguage = await fetchDetailPageAbstracts(handle);
+      const abstractByLanguage = await fetchDetailPageAbstracts(handle,BASE_URL);
 
       return normalizeThesis({
         handle,

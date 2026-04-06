@@ -1,5 +1,7 @@
-// Provider-level shared helper utilities.
+import axios from "axios";
+import * as cheerio from "cheerio";
 
+// Provider-level shared helper utilities.
 export const toAbstractByLanguage = (abstracts) => {
   if (!Array.isArray(abstracts)) return {};
 
@@ -61,4 +63,70 @@ export const deduplicate = (theses) => {
     }
   }
   return Array.from(seen.values());
+};
+
+/**
+ * Fetch detail page and extract full abstracts.
+ * Primary source: DCTERMS.abstract meta tags
+ * Fallback for OuluRepo: visible HTML abstract block
+ */
+export const fetchDetailPageAbstracts = async (handle, BASE_URL) => {
+  if (!handle) return {};
+
+  try {
+    const detailUrl = /^https?:\/\//i.test(handle)
+      ? handle
+      : new URL(handle, BASE_URL).href;
+
+    const response = await axios.get(detailUrl, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
+      timeout: 10000,
+    });
+
+    const $d = cheerio.load(response.data);
+    const abstracts = [];
+
+    if (BASE_URL === "https://oulurepo.oulu.fi/") {
+      const abstractContainer = $d(".simple-item-view-description > div").first();
+
+      if (abstractContainer.length) {
+        const abstractText = abstractContainer
+          .text()
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (abstractText) {
+          abstracts.push({
+            language: detectAbstractLanguage(abstractText),
+            value: abstractText,
+          });
+        }
+      }
+    } else {
+      const abstractMetas = $d('meta[name="DCTERMS.abstract"]').toArray();
+
+      abstractMetas.forEach((meta) => {
+        const abstractText = ($d(meta).attr("content") || "").trim();
+        if (!abstractText) return;
+
+        let detectedLang = $d(meta).attr("xml:lang");
+        if (!detectedLang || detectedLang === "-") {
+          detectedLang = detectAbstractLanguage(abstractText);
+        }
+
+        abstracts.push({
+          language: detectedLang,
+          value: abstractText,
+        });
+      });
+    }
+
+    return toAbstractByLanguage(abstracts);
+  } catch (error) {
+    console.warn(`Failed to fetch detail page for ${handle}:`, error.message);
+    return {};
+  }
 };
