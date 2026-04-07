@@ -3,21 +3,11 @@ import { normalizeThesis } from "./types.js";
 
 // Link for Helda doc api
 const HELDA_API_BASE = "https://helda.helsinki.fi/server/api/";
-const HELDA_SCOPE = "f0e1c8b9-5a3c-4d9e-8b1a-2c3d4e5f6a7b"; // bachelor and master theses
 const HELDA_BACHELOR_SCOPE = "09dc20ad-06ac-4423-bab3-4d725a7efbe";
 const HELDA_MASTER_SCOPE = "13d90218-edf0-4beb-887b-71fc1ecea33e";
 
 export const HeldaProvider = {
   // rpp = results per page
-  buildUrl: function({ query, rpp, yearMin, yearNow }) {
-    const encodedQuery = encodeURIComponent(query);
-    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
-    console.log(`Building Helda URL with query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearNow=${yearNow}`);
-    const url = `${HELDA_API_BASE}discover/search/objects?query=dc.subject:${encodedQuery}&scope=${HELDA_SCOPE}&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
-    console.log(`Constructed Helda URL: ${url}`);
-    return url;
-  },
-
   buildUrls: function({ query, rpp, yearMin, yearNow }) {
     const encodedQuery = encodeURIComponent(query);
     const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);

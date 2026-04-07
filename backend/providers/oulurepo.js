@@ -28,7 +28,8 @@ export const OuluRepoProvider = {
     const { elements, $ } = parsedInput;
     const CONCURRENCY_LIMIT = 3;
 
-    const tasks = elements.map(async (element) => {
+    // Use lazy tasks so requests only start inside runWithConcurrency batches.
+    const tasks = elements.map((element) => async () => {
       const el = $(element);
 
       const title =
