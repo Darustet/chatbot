@@ -87,7 +87,7 @@ export const TheseusProvider = {
         title: title || "No Title",
         author: author || "Unknown Author",
         year: year || "Unknown Date",
-        publisher: publisher || "Unknown University",
+        publisher: publisher ? `${publisher} UAS` : "Unknown UAS",
         universityCode: uniCode,
         abstractByLanguage,
       });
