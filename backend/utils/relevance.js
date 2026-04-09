@@ -184,7 +184,6 @@ export const calculateNokiaCollaborationScoreByRules = (thesis, lang = "en") => 
   // early Nokia filter
   if (!containsNokia(combinedText)) {
     return {
-      ...thesis,
       _nokiaScore: 0,
       _nokiaRelevance: "NO_INDICATION",
       _nokiaReasons: ["No Nokia mention"]
@@ -269,7 +268,6 @@ export const calculateNokiaCollaborationScoreByRules = (thesis, lang = "en") => 
   }
 
   return {
-    ...thesis,
     _nokiaScore: nokiaScore,
     _nokiaRelevance: toLabel(nokiaScore),
     _nokiaReasons: reasons

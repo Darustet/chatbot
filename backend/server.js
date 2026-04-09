@@ -128,13 +128,14 @@ app.get("/uni/:uni", async (req, res) => {
         const thesesWithScores = filtered.map((t) => {
             const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
             return {
-                handle: t.handle,
-                thesisId: t.thesisId,
-                thesis: scoreData
+                thesis: t.thesis,
+                _nokiaScore: scoreData._nokiaScore,
+                _nokiaRelevance: scoreData._nokiaRelevance,
+                _nokiaReasons: scoreData._nokiaReasons
             };
         });
 
-        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b.thesis._nokiaScore - a.thesis._nokiaScore);
+        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b._nokiaScore - a._nokiaScore);
 
         return res.json(thesesWithScoreSorted);
     } catch (error) {
