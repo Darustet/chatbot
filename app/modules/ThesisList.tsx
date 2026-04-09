@@ -58,7 +58,7 @@ export default function ThesisList() {
 
   // Add this utility function to format handles correctly
   const getValidHandle = (item: any) => {
-    const handle = item.handle || "";
+    const handle = item?.handle || item?.thesis?.handle || "";
     // Ensure the handle is properly formatted for routing
     if (typeof handle === 'string') {
       if (handle.startsWith('/handle/')) {
@@ -196,8 +196,8 @@ export default function ThesisList() {
         const university = item.thesis?.publisher ?? "";
         const author = item.thesis?.author ?? "";
         const date = item.thesis?.year || item.thesis?.date || "";
-        const nokiaScore = item.thesis?._nokiaScore ?? 0;
-        const handle = item.handle ?? "";
+        const nokiaScore = item._nokiaScore ?? item.thesis?._nokiaScore ?? 0;
+        const handle = item?.handle ?? item?.thesis?.handle ?? "";
         const universityCode = item.thesis?.universityCode ?? "";
 
         let link = "";

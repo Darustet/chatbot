@@ -1,8 +1,10 @@
 import axios from "axios";
 import express from "express";
 import * as cheerio from "cheerio";
+import "./database/db.js";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
+import { createThesisEntry } from "./database/services/thesisService.js";
 import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 import { deduplicate } from "./providers/helpers.js";
@@ -51,6 +53,98 @@ const uniCodes = [
 const validUniCodes = uniCodes.map(u => u.code);
 console.log('validUnicodes: ', validUniCodes);
 
+const toStoredLabel = (relevance) => {
+    if (relevance === "NOKIA_COLLABORATION") return "NOKIA_COLLABORATION";
+    if (relevance === "AMBIGUOUS") return "AMBIGUOUS";
+    return "NO_INDICATION_OF_COLLABORATION";
+};
+
+// pick the english abstract if available, otherwise pick the first available abstract, 
+// and if it's an array join it into a string
+const pickAbstractForStorage = (abstractByLanguage) => {
+    if (!abstractByLanguage) return null;
+    if (typeof abstractByLanguage === "string") return abstractByLanguage;
+    if (Array.isArray(abstractByLanguage)) return abstractByLanguage.join(" ");
+    if (typeof abstractByLanguage === "object") {
+        if (abstractByLanguage.en) return String(abstractByLanguage.en);
+        const firstKey = Object.keys(abstractByLanguage)[0];
+        return firstKey ? String(abstractByLanguage[firstKey]) : null;
+    }
+    return null;
+};
+
+const persistTheses = (thesesWithScores) => {
+    let saved = 0;
+    let failed = 0;
+
+    for (const item of thesesWithScores) {
+        try {
+            const thesis = item.thesis || {};
+            createThesisEntry({
+                title: thesis.title,
+                author: thesis.author,
+                year: thesis.year,
+                university: thesis.universityCode || null,
+                universityCode: thesis.universityCode || null,
+                handle: thesis.handle || null,
+                thesisId: thesis.thesisId || null,
+                abstractText: pickAbstractForStorage(thesis.abstractByLanguage),
+                publisher: thesis.publisher || null,
+                language: "en",
+                labelName: toStoredLabel(item._nokiaRelevance)
+            });
+            saved += 1;
+        } catch (error) {
+            failed += 1;
+        }
+    }
+
+    return { saved, failed };
+};
+
+const fetchScoredThesesByUniversity = async (uniCode, context) => {
+    const provider = getProvider(uniCode);
+    let parsed = [];
+
+    if (provider.buildUrls) {
+        const urls = provider.buildUrls(context);
+        console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
+        console.log(`Fetching data from Master URL: ${urls[1]}`);
+        const responses = await Promise.all(urls.map((url) => axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 15000
+        })));
+        parsed = responses.flatMap((response) => provider.parse(response));
+    } else {
+        const fetchUrl = provider.buildUrl(context);
+        console.log(`Fetching data from URL: ${fetchUrl}`);
+        const response = await axios.get(fetchUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 15000
+        });
+        console.log("Response status:", response.status);
+        parsed = provider.parse(response);
+    }
+
+    const normalized = await Promise.resolve(provider.normalize(parsed, { ...context }));
+    const deduplicated = deduplicate(normalized);
+    const filtered = deduplicated.filter((t) => parseInt(t.thesis.year, 10) > 2022);
+
+    return filtered.map((t) => {
+        const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
+        return {
+            thesis: t.thesis,
+            _nokiaScore: scoreData._nokiaScore,
+            _nokiaRelevance: scoreData._nokiaRelevance,
+            _nokiaReasons: scoreData._nokiaReasons
+        };
+    });
+};
+
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS");
@@ -79,62 +173,43 @@ app.get("/uni/:uni", async (req, res) => {
 
     console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearNow=${yearNow})`);
 
-    // Build context for provider functions
-    const context = { uniCode, query, rpp, yearMin, yearNow, uniCodes };
-    const provider = getProvider(uniCode);
     const isKnownUni = validUniCodes.includes(encodeURIComponent(uniCode));
     if (!isKnownUni) {
         return res.status(400).json({ error: `Unknown university code: ${uniCode}` });
     }
-    let parsed = [];
-    try {
-        if (provider.buildUrls) {
-            const urls = provider.buildUrls(context);
-            console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
-            console.log(`Fetching data from Master URL: ${urls[1]}`);
-            const responses = await Promise.all(urls.map( url => axios.get(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                timeout: 15000
 
-            })));
-            parsed = responses.flatMap(response => provider.parse(response));
+    try {
+        let thesesWithScores = [];
+
+        if (uniCode === "all") {
+            const codesToFetch = uniCodes
+                .map((u) => u.code)
+                .filter((code) => code !== "all");
+
+            for (const code of codesToFetch) {
+                const context = { uniCode: code, query, rpp, yearMin, yearNow, uniCodes };
+                try {
+                    const scored = await fetchScoredThesesByUniversity(code, context);
+                    thesesWithScores.push(...scored);
+                } catch (error) {
+                    console.error(`Failed to fetch theses for ${code}:`, error.message);
+                }
+            }
         } else {
-            const fetchUrl = provider.buildUrl(context);
-            console.log(`Fetching data from URL: ${fetchUrl}`);
-            const response = await axios.get(fetchUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                timeout: 15000
-            });
-            console.log("Response status:", response.status);
-            parsed = provider.parse(response);
+            const context = { uniCode, query, rpp, yearMin, yearNow, uniCodes };
+            thesesWithScores = await fetchScoredThesesByUniversity(uniCode, context);
         }
 
-        const normalized = await Promise.resolve(provider.normalize(parsed, { ...context}));
-
-        const deduplicated = deduplicate(normalized);
-
-        const filtered = deduplicated.filter(t => parseInt(t.thesis.year, 10) > 2022);
-        if (filtered.length === 0) {
+        if (thesesWithScores.length === 0) {
             console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
         }
 
-        console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
+        const persisted = persistTheses(thesesWithScores);
+        console.log(`Persisted theses for ${uniCode}: saved=${persisted.saved}, failed=${persisted.failed}`);
+        console.log(`Sending ${thesesWithScores.length} theses to client for university ${uniCode}`);
 
-        const thesesWithScores = filtered.map((t) => {
-            const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
-            return {
-                handle: t.handle,
-                thesisId: t.thesisId,
-                thesis: scoreData
-            };
-        });
-
-        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b.thesis._nokiaScore - a.thesis._nokiaScore);
+        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b._nokiaScore - a._nokiaScore);
 
         return res.json(thesesWithScoreSorted);
     } catch (error) {
