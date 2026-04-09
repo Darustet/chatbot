@@ -29,7 +29,7 @@ echo
 echo "All services started in separate terminals."
 echo "Frontend: http://localhost:8081"
 echo "Node API:  http://localhost:3000"
-echo "Python API:http://localhost:5000"
+echo "Python API:http://localhost:5001"
 echo
 
 echo "Opening browser at http://localhost:8081 ..."

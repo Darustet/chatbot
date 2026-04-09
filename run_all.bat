@@ -33,7 +33,7 @@ echo.
 echo ============================================
 echo All services started.
 echo.
-echo Python Service: Running on port 5000
+echo Python Service: Running on port 5001
 echo Node Backend:   Running on port 3000
 echo Expo Frontend:  Running on port 8081
 echo.
