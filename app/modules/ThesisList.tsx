@@ -44,7 +44,7 @@ const uniCodes = [
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 50;
+const RPP = 10;
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
@@ -58,7 +58,7 @@ export default function ThesisList() {
 
   // Add this utility function to format handles correctly
   const getValidHandle = (item: any) => {
-    const handle = item.handle || "";
+    const handle = item?.handle || item?.thesis?.handle || "";
     // Ensure the handle is properly formatted for routing
     if (typeof handle === 'string') {
       if (handle.startsWith('/handle/')) {
@@ -196,8 +196,8 @@ export default function ThesisList() {
         const university = item.thesis?.publisher ?? "";
         const author = item.thesis?.author ?? "";
         const date = item.thesis?.year || item.thesis?.date || "";
-        const nokiaScore = item.thesis?._nokiaScore ?? 0;
-        const handle = item.handle ?? "";
+        const nokiaScore = item._nokiaScore ?? item.thesis?._nokiaScore ?? 0;
+        const handle = item?.thesis?.handle ?? item?.handle ?? "";
         const universityCode = item.thesis?.universityCode ?? "";
 
         let link = "";
