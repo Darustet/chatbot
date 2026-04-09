@@ -257,7 +257,7 @@ export default function SingleThesis() {
           </Text>
           <TextInput
             style={styles.configInput}
-            placeholder="http://your-ip-address:5000"
+            placeholder="http://your-ip-address:5001"
             value={newApiUrl}
             onChangeText={setNewApiUrl}
           />
