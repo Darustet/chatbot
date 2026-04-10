@@ -10,8 +10,8 @@ function getApiBaseUrl() {
   // Try multiple URLs in order of precedence
   const possibleUrls = [
     getStoredApiUrl(),        // 1. User-configured URL (if any)
-    'http://localhost:5000',  // 2. Standard localhost
-    'http://127.0.0.1:5000'   // 3. Alternative localhost
+    'http://localhost:5001',  // 2. Standard localhost
+    'http://127.0.0.1:5001'   // 3. Alternative localhost
   ];
   
   // Use the first non-null URL
@@ -23,7 +23,7 @@ function getApiBaseUrl() {
   }
   
   // Default fallback
-  return 'http://127.0.0.1:5000';
+  return 'http://127.0.0.1:5001';
 }
 
 // Helper function to get stored API URL
