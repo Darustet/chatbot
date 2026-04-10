@@ -6,16 +6,20 @@ This module provides AI-powered summarization for university theses from multipl
 
 ```
 summary-script/
-├── providers/           # University-specific thesis data fetchers
-│   ├── __init__.py      # Provider registry (maps university codes to providers)
-│   ├── aalto_provider.py    # Aalto University (REST API)
-│   └── theseus_provider.py  # Theseus platform (PDF downloads)
-│   └── other_university.py  # Other university provider
-├── utils/              # Shared utilities (university-agnostic)
+├── providers/                      # University-specific thesis data fetchers
+│   ├── __init__.py                 # Provider registry (maps university codes to providers)
+│   ├── aalto_provider.py           # Aalto University (REST API)
+│   ├── helda_provider.py           # Helda University (REST API)
+│   ├── non_api_repo_provider.py    # Non-API repository provider (opens an HTML page to locate the abstract text)
+│   └── theseus_provider.py         # Theseus platform (PDF downloads)
+│   ├── oulurepository_provider.py  # Oulu repository provider (provide the base URL)
+│   ├── theseus_provider.py         # Theseus repository provider (provide the base URL)
+│   └── trepo_provider.py           # Tampere repository provider (provide the base URL)
+├── utils/                          # Shared utilities (university-agnostic)
 │   ├── __init__.py
-│   └── summarizer.py   # AI summarization logic (BART transformer + fallback)
-├── app.py             # Flask server entry point
-└── requirements.txt   # Python dependencies
+│   └── summarizer.py               # AI summarization logic (BART transformer + fallback)
+├── app.py                          # Flask server entry point
+└── requirements.txt                # Python dependencies
 ```
 
 ## 🔄 How It Works
@@ -51,17 +55,39 @@ result = provider.summarize(thesis_id='12345')
 
 ### 1. **Aalto Provider** (`providers/aalto_provider.py`)
 
-- **Data Source:** REST API (aaltodoc.aalto.fi)
+- **Data Source:** REST API (`aaltodoc.aalto.fi`)
 - **Data Fetching:** Queries JSON metadata endpoint
 - **Abstract Extraction:** Prefers English, falls back to Finnish
 - **Use Case:** Fast, doesn't require file downloads
 
-### 2. **Theseus Provider** (`providers/theseus_provider.py`)
+### 2. **Helda Provider** (`providers/helda_provider.py`)
 
-- **Data Source:** Theseus platform (theseus.fi)
-- **Data Fetching:** Downloads PDF, extracts text
-- **Abstract Extraction:** Reads from PDF metadata/content
-- **Use Case:** Finnish universities using Theseus
+- **Data Source:** REST API (`helda.helsinki.fi`)
+- **Data Fetching:** Queries JSON metadata endpoint
+- **Abstract Extraction:** Prefers English, falls back to Finnish
+- **Use Case:** Fast, doesn't require file downloads
+
+### 3. **Oulurepo Provider** (`providers/oulurepo_provider.py`)
+
+- **Data Source:** Oulurepo repository (`oulurepo.oulu.fi`)
+- **Data Fetching:** Opens the thesis HTML page and looks for the abstract text
+- **Abstract Extraction:** Extracts the abstract from HTML meta tags or visible page content
+- **Use Case:** Oulu university theses using Oulurepo
+
+### 4. **Theseus Provider** (`providers/theseus_provider.py`)
+
+- **Data Source:** Theseus platform (`theseus.fi`)
+
+- **Data Fetching:** Opens the thesis HTML page and looks for the abstract text
+- **Abstract Extraction:** Extracts the abstract from HTML meta tags or visible page content
+- **Use Case:** Finnish UAS theses using Theseus
+
+### 5. **Trepo Provider** (`providers/trepo_provider.py`)
+
+- **Data Source:** TREPO repository (`trepo.tuni.fi`)
+- **Data Fetching:** Opens the thesis HTML page and looks for the abstract text
+- **Abstract Extraction:** Extracts the abstract from HTML meta tags or visible page content
+- **Use Case:** Tampere University theses stored in Trepo
 
 ## 🧠 Summarization Engine (`utils/summarizer.py`)
 
