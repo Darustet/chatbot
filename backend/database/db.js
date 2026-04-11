@@ -30,23 +30,20 @@ if (thesesCount === 0) {
 }
 
 
-// // Test
-// const labelsRow = db.prepare('SELECT * FROM labels').all();
-// console.log(`Current labels in database: ${labelsRow.length}`);
-// const firstLabel = labelsRow[0];
-// if (firstLabel) {
-//   console.log('Example label record:', firstLabel);
-// } else {
-//   console.log('No labels found in database after initialization.');
-// }
+// // TEST
+// // Show all tables in the database
+// console.log("Tables in database:", db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all());
 
-const thesesRows = db.prepare('SELECT * FROM theses').all();
-console.log(`Current theses in database: ${thesesRows.length}`);
-const firstThesis = thesesRows[5];
-if (firstThesis) {
-  console.log('Example thesis record:', firstThesis);
-} else {
-  console.log('No theses found in database after initialization.');
-}
+// Fetch all rows from theses table and log them
+// const allTheses = db.prepare('SELECT * FROM theses').all();
+// console.log("All theses in database:", allTheses);
+
+// // Get a single row
+// const row = db.prepare('SELECT * FROM theses WHERE id = ?').get(1);
+// console.log("Row number 1:", row);
+
+// // Check table structure (columns)
+// const columns = db.prepare("PRAGMA table_info(theses)").all();
+// console.log("Columns in theses table:", columns);
 
 export default db;

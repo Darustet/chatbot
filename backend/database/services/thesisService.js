@@ -16,7 +16,8 @@ function toIntOrNull(value) {
 	return Number.isNaN(parsed) ? null : parsed;
 }
 
-// resolve label_id from payload, if label_id is provided return it, otherwise try to resolve it from labelName or label, if not found create a new label and return its id
+// resolve label_id from payload, if label_id is provided return it, otherwise try to resolve it from labelName 
+// or label, if not found create a new label and return its id
 function resolveLabelId(payload) {
 	if (payload.label_id !== undefined && payload.label_id !== null) {
 		return payload.label_id;
@@ -48,7 +49,6 @@ function normalizeThesisPayload(payload = {}) {
 		thesisId: payload.thesisId ?? payload.thesis_id ?? null,
 		abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
 		publisher: payload.publisher ?? null,
-		language: payload.language ?? null,
 		label_id: resolveLabelId(payload)
 	};
 }
