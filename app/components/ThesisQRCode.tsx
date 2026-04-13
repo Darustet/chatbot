@@ -31,7 +31,9 @@ export const ThesisQRCode = ({ handle, universityCode, size = 150 }: ThesisQRCod
       return `https://trepo.tuni.fi${cleanHandle}`;
     } else if (universityCode === 'OULUREPO') {
       return `https://oulurepo.oulu.fi${cleanHandle}`;
-    }else {
+    }  else if (universityCode === 'LUTPUB') {
+      return `https://lutpub.lut.fi${cleanHandle}`;
+    } else {
       // If it's a handle with /handle/ prefix, use it
       if (cleanHandle.startsWith('/handle/')) {
         return `https://www.theseus.fi${cleanHandle}`;
