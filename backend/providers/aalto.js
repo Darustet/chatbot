@@ -1,5 +1,6 @@
 import { normalizeThesis } from "./types.js";
 import { toAbstractByLanguage } from "./helpers.js";
+import { analyzeThesisLink } from "./openAiDecision.js"
 
 // Link for Aalto doc api
 const AALTO_API_BASE = "https://aaltodoc.aalto.fi/server/api";
@@ -25,7 +26,7 @@ export const AaltoProvider = {
 
   // Normalize the parsed data into a consistent format for the frontend
   normalize(objects) {
-    return objects.map((obj, index) => {
+    return objects.map((obj, index) => async () => {
       const item = obj._embedded?.indexableObject ?? {};
       const thesisId = item.id || `unknown-id-${index}`;
       const title = item.name || "No Title";
@@ -45,6 +46,12 @@ export const AaltoProvider = {
       const abstracts = item.metadata?.["dc.description.abstract"]; // array of { value, language }
 
       const abstractByLanguage = toAbstractByLanguage(abstracts);
+
+      const thesisUrl = /^https?:\/\//i.test(handle)
+      ? handle
+      : new URL(handle, BASE_URL).href;
+
+      const getOpenAIDecision = await analyzeThesisLink(thesisUrl)
       
       return normalizeThesis({
         handle,
@@ -55,6 +62,8 @@ export const AaltoProvider = {
         publisher: publisher || "Aalto University",
         universityCode: "AALTO",
         abstractByLanguage,
+        isNokiaProject: getOpenAIDecision.decision.toUpperCase() ||"Unknown is done for Nokia",
+        evidence: getOpenAIDecision.evidence || "Unknown evidence"
       });
     });
   }

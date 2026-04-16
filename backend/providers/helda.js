@@ -1,5 +1,6 @@
 import { toAbstractByLanguage } from "./helpers.js";
 import { normalizeThesis } from "./types.js";
+import { analyzeThesisLink } from "./openAiDecision.js"
 
 // Link for Helda doc api
 const HELDA_API_BASE = "https://helda.helsinki.fi/server/api/";
@@ -23,7 +24,7 @@ export const HeldaProvider = {
   },
 
   normalize(objects) {
-    return objects.map((obj, index) => {
+    return objects.map((obj, index) => async () =>{
       const item = obj._embedded?.indexableObject ?? {};
       const thesisId = item.id || `unknown-id-${index}`;
       const title = item.name || "No Title";
@@ -43,6 +44,12 @@ export const HeldaProvider = {
       const abstracts = item.metadata?.["dc.description.abstract"]; // array of { value, language }
       const abstractByLanguage = toAbstractByLanguage(abstracts);
 
+      const thesisUrl = /^https?:\/\//i.test(handle)
+      ? handle
+      : new URL(handle, BASE_URL).href;
+
+      const getOpenAIDecision = await analyzeThesisLink(thesisUrl)
+
       return normalizeThesis({ 
         thesisId, 
         title, 
@@ -51,7 +58,9 @@ export const HeldaProvider = {
         year, 
         publisher: publisher || "University of Helsinki",
         universityCode: "HELDA",
-        abstractByLanguage
+        abstractByLanguage,
+        isNokiaProject: getOpenAIDecision.decision.toUpperCase() ||"Unknown is done for Nokia",
+        evidence: getOpenAIDecision.evidence || "Unknown evidence"
       });
     });
   }

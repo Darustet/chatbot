@@ -2,6 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
 import { fetchDetailPageAbstracts, runWithConcurrency } from "./helpers.js";
+import { analyzeThesisLink } from "./openAiDecision.js"
 
 const BASE_URL = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
@@ -86,6 +87,12 @@ export const TrepoProvider = {
       //Extract abstract
       const abstractByLanguage = await fetchDetailPageAbstracts(handle,BASE_URL);
 
+      const thesisUrl = /^https?:\/\//i.test(handle)
+      ? handle
+      : new URL(handle, BASE_URL).href;
+
+      const getOpenAIDecision = await analyzeThesisLink(thesisUrl)
+
       return normalizeThesis({
         handle,
         thesisId: null,
@@ -95,6 +102,8 @@ export const TrepoProvider = {
         publisher: publisher || "Tampere University",
         universityCode: uniCode,
         abstractByLanguage,
+        isNokiaProject: getOpenAIDecision.decision.toUpperCase() ||"Unknown is done for Nokia",
+        evidence: getOpenAIDecision.evidence || "Unknown evidence"
       });
     });
   });

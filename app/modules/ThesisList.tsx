@@ -45,7 +45,7 @@ const uniCodes = [
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 50;
+const RPP = 10;
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
@@ -201,6 +201,8 @@ export default function ThesisList() {
         const nokiaScore = item._nokiaScore ?? item.thesis?._nokiaScore ?? 0;
         const handle = item?.thesis?.handle ?? item?.handle ?? "";
         const universityCode = item.thesis?.universityCode ?? "";
+        const isNokiaProject = item.thesis?.isNokiaProject ?? "";
+        const evidence = item.thesis?.evidence ?? "";
 
         let link = "";
 
@@ -224,7 +226,9 @@ export default function ThesisList() {
           author,
           date,
           nokiaScore,
-          link
+          link,
+          isNokiaProject,
+          evidence
         };
     });
   }, [theses]);
@@ -374,6 +378,8 @@ export default function ThesisList() {
               const year = String(item?.thesis?.year || item?.year || item?.thesis?.date || item?.date || "Unknown Date");
               const universityCode = String(item?.thesis?.universityCode || item?.universityCode || "unknown university code");
               const thesisId = String(item?.thesis?.thesisId || item?.thesisId || `unknown-id`);
+              const isNokiaProject = String(item?.thesis?.isNokiaProject || item?.isNokiaProject || 'unknown');
+              const evidence = String(item?.thesis?.evidence || item?.evidence || 'unknown');
 
               // Enhanced publisher extraction with multiple fallbacks
               // First check if university name is stored directly (from our data enhancement)

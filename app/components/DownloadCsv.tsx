@@ -9,7 +9,9 @@ export const DownloadCsv = ({ elements }) => {
     'author',
     'date',
     'nokiaScore',
-    'link'
+    'link',
+    'isNokiaProject',
+    'evidence'
   ];
 
   function escapeCSV(value: any, delimiter = ';') {
