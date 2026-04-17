@@ -44,7 +44,8 @@ const uniCodes = [
   {"uni": "Aalto", "code": "AALTO"},
   {"uni": "Helsinki", "code": "HELDA"},
   {"uni": "Tampere university", "code": "TREPO"},
-  {"uni": "OuluRepo", "code": "OULUREPO"},
+  {"uni": "Oulu University", "code": "OULUREPO"},
+  {"uni": "LUT University", "code": "LUTPUB"},
 ];
 
 
