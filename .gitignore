@@ -19,6 +19,14 @@ __pycache__/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+# ML model artifacts
+backend/data/exports/*.pkl
+
+# Generated metrics and analysis outputs
+backend/data/exports/*metrics*.json
+backend/data/exports/rule_vs_ml_*.json
+backend/data/exports/rule_vs_ml_*.csv
+
 
 # macOS
 .DS_Store

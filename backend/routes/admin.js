@@ -253,10 +253,13 @@ router.post('/collect-theses', async (req, res) => {
             university: getUniversityNameByCode(code),
             universityCode: thesis.universityCode || null,
             handle: thesis.handle || null,
+            link: thesis.link || null,
             thesisId: thesis.thesisId || null,
             abstractText: toStorageAbstract(thesis.abstractByLanguage),
             publisher: thesis.publisher || null,
-            labelName: toStoredLabel(item._nokiaRelevance)
+            labelName: toStoredLabel(item._nokiaRelevance),
+            nokia_score: item._nokiaScore ?? null,
+            nokia_reasons: item._nokiaReasons ?? null
           };
 
           const thesisKey = makeThesisKey({

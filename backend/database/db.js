@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { filename, theses, checkTheses, exampleTheses, labels, labelsData, checkLabels } from './db-config.js';
+import { filename, theses, labels, labelsData, checkLabels } from './db-config.js';
 
 console.log(`Opening SQLite database at: ${filename}`);
 const db = new Database(filename);
@@ -18,17 +18,6 @@ if (labelsCount === 0) {
 } else {
   console.log('Labels table already populated.');
 }
-
-// chekck if the theses table is empty
-const thesesCount = (db.prepare(checkTheses).get()).count;
-// If the table is empty, insert example theses
-if (thesesCount === 0) {
-  db.prepare(exampleTheses).run();
-  console.log('Inserted example theses.');
-} else {
-  console.log('Theses table already populated.');
-}
-
 
 // // TEST
 // // Show all tables in the database

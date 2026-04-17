@@ -39,6 +39,10 @@ function normalizeThesisPayload(payload = {}) {
   if (!payload.title) {
     throw new Error('Missing required field: title');
   }
+  // Convert nokia_reasons array to JSON string if needed
+  const nokiaReasons = payload.nokia_reasons ?? null;
+  const nokiaReasonsStr = nokiaReasons ? (Array.isArray(nokiaReasons) ? JSON.stringify(nokiaReasons) : String(nokiaReasons)) : null;
+
 	return {
 		title: payload.title ?? '',
 		author: payload.author ?? '',
@@ -46,10 +50,13 @@ function normalizeThesisPayload(payload = {}) {
 		university: payload.university ?? null,
 		university_code: payload.university_code ?? payload.universityCode ?? null,
 		handle: payload.handle ?? null,
+		link: payload.link ?? null,
 		thesisId: payload.thesisId ?? payload.thesis_id ?? null,
 		abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
 		publisher: payload.publisher ?? null,
-		label_id: resolveLabelId(payload)
+		label_id: resolveLabelId(payload),
+		nokia_score: toIntOrNull(payload.nokia_score),
+		nokia_reasons: nokiaReasonsStr
 	};
 }
 
