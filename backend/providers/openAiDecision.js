@@ -6,7 +6,7 @@ dotenv.config();
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error(
-    "OPENAI_API_KEY puuttuu. Tarkista että .env latautuu oikein."
+    "OPENAI_API_KEY is missing. Make sure the .env file is loaded correctly."
   );
 }
 
