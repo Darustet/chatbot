@@ -1,5 +1,6 @@
 import axios from "axios";
 import express from "express";
+import 'dotenv/config';
 import db from "./database/db.js";
 import * as cheerio from "cheerio";
 import adminRoutes from "./routes/admin.js";

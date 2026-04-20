@@ -16,7 +16,7 @@ SELECT
   labels.name AS label,
   theses.university,
   theses.author,
-  theses.nokia_score,
+  theses.rule_score,
   theses.link,
   theses.nokia_reasons
 FROM theses
@@ -60,7 +60,7 @@ df["target"] = df["label"].map(label_map)
 df = df.dropna(subset=["target"])
 
 # keep only the columns we need
-export_df = df[["id", "text", "target", "label", "title", "university", "author", "nokia_score", "link",  "nokia_reasons"]].copy()
+export_df = df[["id", "text", "target", "label", "title", "university", "author", "rule_score", "link",  "nokia_reasons"]].copy()
 
 export_df.to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
 print(f"Saved {len(export_df)} rows to {OUTPUT_CSV}")

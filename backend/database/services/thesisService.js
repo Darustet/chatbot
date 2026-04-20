@@ -16,6 +16,24 @@ function toIntOrNull(value) {
 	return Number.isNaN(parsed) ? null : parsed;
 }
 
+function toFloatOrNull(value) {
+	if (value === undefined || value === null || value === '') {
+		return null;
+	}
+	const parsed = Number.parseFloat(String(value));
+	return Number.isNaN(parsed) ? null : parsed;
+}
+
+function toTextOrNull(value) {
+	if (value === undefined || value === null || value === '') {
+		return null;
+	}
+	if (Array.isArray(value)) {
+		return JSON.stringify(value);
+	}
+	return String(value);
+}
+
 // resolve label_id from payload, if label_id is provided return it, otherwise try to resolve it from labelName 
 // or label, if not found create a new label and return its id
 function resolveLabelId(payload) {
@@ -39,9 +57,9 @@ function normalizeThesisPayload(payload = {}) {
   if (!payload.title) {
     throw new Error('Missing required field: title');
   }
-  // Convert nokia_reasons array to JSON string if needed
-  const nokiaReasons = payload.nokia_reasons ?? null;
-  const nokiaReasonsStr = nokiaReasons ? (Array.isArray(nokiaReasons) ? JSON.stringify(nokiaReasons) : String(nokiaReasons)) : null;
+	const ruleReasonsRaw = payload.rule_reasons ?? null;
+	const ruleReasonsStr = toTextOrNull(ruleReasonsRaw);
+
 
 	return {
 		title: payload.title ?? '',
@@ -55,8 +73,14 @@ function normalizeThesisPayload(payload = {}) {
 		abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
 		publisher: payload.publisher ?? null,
 		label_id: resolveLabelId(payload),
-		nokia_score: toIntOrNull(payload.nokia_score),
-		nokia_reasons: nokiaReasonsStr
+		rule_label: payload.rule_label ?? null,
+		rule_score: toIntOrNull(payload.rule_score),
+		rule_reasons: ruleReasonsStr,
+		ml_label: payload.ml_label ?? null,
+		ml_probability: toFloatOrNull(payload.ml_probability),
+		hybrid_label: payload.hybrid_label ?? null,
+		hybrid_reasons: payload.hybrid_reasons ?? null,
+		final_label_used: payload.final_label_used ?? payload.hybrid_label ?? payload.labelName ?? null
 	};
 }
 

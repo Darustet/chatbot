@@ -16,6 +16,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const dashboardFilePath = path.join(__dirname, '../data/dashboard.json');
+// ML service configuration
+const mlServiceBaseUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001';
+const mlHighThreshold = parseFloat(process.env.ML_HIGH_THRESHOLD || '0.5');
+console.log(`ML high threshold: ${mlHighThreshold}`);
+const mlLowThreshold = parseFloat(process.env.ML_LOW_THRESHOLD || '0.3');
+console.log(`ML low threshold: ${mlLowThreshold}`);
 
 const validUniCodeSet = new Set(validUniCodes); // an object of university codes
 const getUniversityNameByCode = (code) => uniCodes.find((entry) => entry.code === code)?.uni || null;
@@ -45,6 +51,58 @@ const makeThesisKey = ({ handle, title, year, universityCode }) => {
   const yearPart = year == null ? '' : String(year);
   const uniPart = universityCode || '';
   return `${handlePart}|${titlePart}|${yearPart}|${uniPart}`.toLowerCase();
+};
+
+// title and abstract combined for ML model input
+const toModelText = (title, abstractText) => {
+  const safeTitle = title ? String(title) : '';
+  const safeAbstract = abstractText ? String(abstractText) : '';
+  return `${safeTitle} ${safeAbstract}`.trim();
+};
+
+// Call ML service to classify thesis text, return null if any error occurs or if text is empty
+async function classifyThesisWithMl(text) {
+  if (!text) return null;
+  try {
+    const response = await axios.post(
+      `${mlServiceBaseUrl}/classify-thesis`,
+      { text },
+      { timeout: 8000 }
+    );
+    return response.data;
+  } catch (error) {
+    const status = error?.response?.status;
+    const detail = error?.response?.data?.error || error?.message || error;
+    console.warn(`ML classify call failed (status: ${status ?? 'n/a'}), fallback to rule-only:`, detail);
+    return null;
+  }
+}
+
+// Convert ML probability to label bands
+const toMlBandLabel = (probability) => {
+  if (typeof probability !== 'number' || Number.isNaN(probability)) return 'AMBIGUOUS';
+  if (probability >= mlHighThreshold) return 'NOKIA_COLLABORATION';
+  if (probability <= mlLowThreshold) return 'NO_INDICATION_OF_COLLABORATION';
+  return 'AMBIGUOUS';
+};
+
+const decideHybridLabel = (ruleLabel, mlProbability) => {
+  const normalizedRuleLabel = toStoredLabel(ruleLabel);
+  const mlBandLabel = toMlBandLabel(mlProbability);
+
+  // If ML is unavailable, keep current rule behavior.
+  if (typeof mlProbability !== 'number' || Number.isNaN(mlProbability)) return normalizedRuleLabel;
+
+  // If ML is uncertain, keep ambiguous for tie-break stage.
+  if (mlBandLabel === 'AMBIGUOUS') return 'AMBIGUOUS';
+
+  // If rule is uncertain but ML is confident, use ML.
+  if (normalizedRuleLabel === 'AMBIGUOUS') return mlBandLabel;
+
+  // If rule and ML disagree, mark as ambiguous for later LLM adjudication.
+  if (normalizedRuleLabel !== mlBandLabel) return 'AMBIGUOUS';
+
+  return normalizedRuleLabel;
 };
 
 async function fetchScoredThesesByUniversity(context) {
@@ -246,6 +304,21 @@ router.post('/collect-theses', async (req, res) => {
 
         for (const item of thesesWithScores) {
           const thesis = item.thesis || {};
+          const abstractText = toStorageAbstract(thesis.abstractByLanguage);
+          const modelText = toModelText(thesis.title, abstractText);
+          const mlResult = await classifyThesisWithMl(modelText);
+          const mlProbability = typeof mlResult?.probability === 'number' ? mlResult.probability : null;
+          const mlLabel = toMlBandLabel(mlProbability);
+          const ruleLabel = toStoredLabel(item._nokiaRelevance);
+          const hybridLabel = decideHybridLabel(item._nokiaRelevance, mlProbability);
+          const finalLabelUsed = hybridLabel;
+
+          const reasonParts = Array.isArray(item._nokiaReasons) ? [...item._nokiaReasons] : [];
+          if (typeof mlProbability === 'number') {
+            reasonParts.push(`ML probability: ${mlProbability.toFixed(3)}`);
+          }
+          reasonParts.push(`Hybrid label: ${hybridLabel}`);
+
           const payload = {
             title: thesis.title,
             author: thesis.author,
@@ -255,11 +328,18 @@ router.post('/collect-theses', async (req, res) => {
             handle: thesis.handle || null,
             link: thesis.link || null,
             thesisId: thesis.thesisId || null,
-            abstractText: toStorageAbstract(thesis.abstractByLanguage),
+            abstractText,
             publisher: thesis.publisher || null,
-            labelName: toStoredLabel(item._nokiaRelevance),
-            nokia_score: item._nokiaScore ?? null,
-            nokia_reasons: item._nokiaReasons ?? null
+            labelName: finalLabelUsed,
+            nokia_reasons: reasonParts,
+            rule_label: ruleLabel,
+            rule_score: item._nokiaScore ?? null,
+            rule_reasons: item._nokiaReasons ?? null,
+            ml_label: mlLabel,
+            ml_probability: mlProbability,
+            hybrid_label: hybridLabel,
+            hybrid_reasons: reasonParts.join('; '),
+            final_label_used: finalLabelUsed
           };
 
           const thesisKey = makeThesisKey({

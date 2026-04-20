@@ -18,8 +18,14 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   abstract_text TEXT,
   publisher VARCHAR(250),
   label_id INTEGER,
-  nokia_score INTEGER,
-  nokia_reasons TEXT,
+  rule_label VARCHAR(64),
+  rule_score INTEGER,
+  rule_reasons TEXT,
+  ml_label VARCHAR(64),
+  ml_probability REAL,
+  hybrid_label VARCHAR(64),
+  hybrid_reasons TEXT,
+  final_label_used VARCHAR(64),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (label_id) REFERENCES labels(id)
 )`;

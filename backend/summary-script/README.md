@@ -1,6 +1,6 @@
-# Summary Script - Python Thesis Summarization Service
+# Summary Script - Python Thesis AI Service
 
-This module provides AI-powered summarization for university theses from multiple data sources.
+This module provides AI-powered summarization and ML classification support for university theses.
 
 ## 📁 Folder Structure
 
@@ -104,3 +104,75 @@ Two-tier approach:
    - Used when BART fails or is unavailable
 
 **Flow:** Transformer → Manual summary → Error messages
+
+## 🌐 API Endpoints
+
+### `GET /ping`
+
+Simple health endpoint for service liveness checks.
+
+Response:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### `GET /ml-ready`
+
+Diagnostic endpoint for ML inference readiness. Useful for troubleshooting environment and model path issues.
+
+Response fields include:
+
+- `python_executable`
+- `python_version`
+- `cwd`
+- `model_path`
+- `model_exists`
+- `sklearn_ok`
+- `sklearn_version`
+- `sklearn_error`
+
+Example:
+
+```json
+{
+  "python_executable": "...\\.venv\\Scripts\\python.exe",
+  "model_exists": true,
+  "sklearn_ok": true,
+  "sklearn_version": "1.8.0"
+}
+```
+
+### `POST /classify-thesis`
+
+Returns ML probability that a thesis belongs to the collaboration class.
+
+Request body:
+
+```json
+{
+  "text": "Thesis title and abstract text"
+}
+```
+
+Success response:
+
+```json
+{
+  "probability": 0.7342
+}
+```
+
+Error behavior:
+
+- `400`: missing `text` field
+- `503`: model missing or dependency missing (for example `sklearn`)
+- `500`: unexpected runtime failure
+
+## 🧩 Integration Notes
+
+- The classification model is loaded from `backend/data/exports/tfidf_model.pkl`.
+- This service returns ML probability only for `/classify-thesis`.
+- Thresholding and hybrid decision logic (`NOKIA_COLLABORATION` / `AMBIGUOUS` / `NO_INDICATION_OF_COLLABORATION`) are applied in Node backend route `backend/routes/admin.js`.

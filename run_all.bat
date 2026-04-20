@@ -13,8 +13,7 @@ REM Start Python service
 REM -------------------------
 echo.
 echo Starting Python summary service...
-start "Python Service" cmd /k "cd /d "%~dp0backend\summary-script" && call .venv\Scripts\activate.bat && python app.py"
-
+start "Python Service" cmd /k ""%~dp0backend\summary-script\.venv\Scripts\python.exe" "%~dp0backend\summary-script\app.py""
 REM -------------------------
 REM Start Node backend
 REM -------------------------
