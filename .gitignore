@@ -19,8 +19,7 @@ __pycache__/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
-# ML model artifacts
-backend/data/exports/*.pkl
+
 
 # Generated metrics and analysis outputs
 backend/data/exports/*metrics*.json
