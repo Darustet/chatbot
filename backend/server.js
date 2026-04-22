@@ -7,7 +7,7 @@ import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
-import { deduplicate } from "./providers/helpers.js";
+import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
 import { uniCodes, validUniCodes } from "./config/universities.js";
 
 const app = express();
@@ -92,9 +92,12 @@ app.get("/uni/:uni", async (req, res) => {
         console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
 
         const thesesWithScores = filtered.map((t) => {
-            const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
+            const thesis = t.thesis || {};
+            const link = thesis.link || resolveThesisLink(thesis.handle, thesis.universityCode || uniCode);
+            const thesisWithLink = { ...thesis, link };
+            const scoreData = calculateNokiaCollaborationScoreByRules(thesisWithLink);
             return {
-                thesis: t.thesis,
+                thesis: thesisWithLink,
                 _nokiaScore: scoreData._nokiaScore,
                 _nokiaRelevance: scoreData._nokiaRelevance,
                 _nokiaReasons: scoreData._nokiaReasons

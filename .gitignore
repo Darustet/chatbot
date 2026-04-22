@@ -35,3 +35,4 @@ backend/data/exports/rule_vs_ml_*.csv
 
 expo-env.d.ts
 # @end expo-cli
+backend/theses.sqlite

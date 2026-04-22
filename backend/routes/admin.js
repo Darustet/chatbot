@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import axios from 'axios';
 import { getProvider } from '../providers/index.js';
-import { deduplicate } from '../providers/helpers.js';
+import { deduplicate, resolveThesisLink } from '../providers/helpers.js';
 import { calculateNokiaCollaborationScoreByRules } from '../utils/relevance.js';
 import { createThesisEntry, listTheses } from '../database/services/thesisService.js';
 import { uniCodes, validUniCodes } from '../config/universities.js';
@@ -143,9 +143,12 @@ async function fetchScoredThesesByUniversity(context) {
     console.warn(`No thesis data found after filtering by year`);
   }
   const thesesWithScores = filtered.map((item) => {
-    const scored = calculateNokiaCollaborationScoreByRules(item.thesis);
+    const thesis = item.thesis || {};
+    const link = thesis.link || resolveThesisLink(thesis.handle, thesis.universityCode || context.uniCode);
+    const thesisWithLink = { ...thesis, link };
+    const scored = calculateNokiaCollaborationScoreByRules(thesisWithLink);
     return {
-      thesis: item.thesis,
+      thesis: thesisWithLink,
       _nokiaScore: scored._nokiaScore,
       _nokiaRelevance: scored._nokiaRelevance,
       _nokiaReasons: scored._nokiaReasons,

@@ -1,6 +1,15 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 
+const THESIS_BASE_URL_BY_UNI = {
+  AALTO: "https://aaltodoc.aalto.fi",
+  HELDA: "https://helda.helsinki.fi",
+  TREPO: "https://trepo.tuni.fi",
+  OULUREPO: "https://oulurepo.oulu.fi",
+};
+
+const THESEUS_BASE_URL = "https://www.theseus.fi";
+
 // Provider-level shared helper utilities.
 export const toAbstractByLanguage = (abstracts) => {
   if (!Array.isArray(abstracts)) return {};
@@ -130,3 +139,21 @@ export const fetchDetailPageAbstracts = async (handle, BASE_URL) => {
     return {};
   }
 };
+
+export const resolveThesisLink = (handle, universityCode) => {
+  const safeHandle = String(handle || "").trim();
+  if (!safeHandle) return "";
+
+  if (/^https?:\/\//i.test(safeHandle)) {
+    return safeHandle;
+  }
+
+  const baseUrl = THESIS_BASE_URL_BY_UNI[universityCode] || THESEUS_BASE_URL;
+
+  try {
+    return new URL(safeHandle, `${baseUrl}/`).href;
+  } catch {
+    return "";
+  }
+};
+
