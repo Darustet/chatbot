@@ -12,15 +12,19 @@ query = """
 SELECT
   theses.id,
   theses.title,
-  theses.abstract_text,
-  labels.name AS label,
   theses.university,
   theses.author,
+  theses.year,
   theses.rule_score,
+  theses.rule_reasons,
+  theses.ml_probability,
+  theses.ml_label,
+  theses.hybrid_label,
   theses.link,
-  theses.nokia_reasons
+  theses.abstract_text,
+  labels.name AS label
 FROM theses
-LEFT JOIN labels ON labels.id = theses.label_id
+LEFT JOIN labels ON labels.id = theses.final_label_id
 """
 
 df = pd.read_sql_query(query, conn)
@@ -54,13 +58,14 @@ else:
   df = df[df["label"] != "AMBIGUOUS"].copy()
 
 # Map labels to target values
+# target comes from labels.name (joined via final_label_id): NOKIA_COLLABORATION -> 1, NO_INDICATION_OF_COLLABORATION -> 0.
 df["target"] = df["label"].map(label_map)
 
 # Drop rows that still failed to map
 df = df.dropna(subset=["target"])
 
 # keep only the columns we need
-export_df = df[["id", "text", "target", "label", "title", "university", "author", "rule_score", "link",  "nokia_reasons"]].copy()
+export_df = df[["id",  "title", "university", "author", "text", "target", "label","rule_score", "ml_probability", "ml_label", "link",  "rule_reasons"]].copy()
 
 export_df.to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
 print(f"Saved {len(export_df)} rows to {OUTPUT_CSV}")

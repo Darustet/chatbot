@@ -333,7 +333,7 @@ router.post('/collect-theses', async (req, res) => {
             thesisId: thesis.thesisId || null,
             abstractText,
             publisher: thesis.publisher || null,
-            labelName: finalLabelUsed,
+            labelName: finalLabelUsed, // final_label_id is resolved in thesisService from labelName.
             nokia_reasons: reasonParts,
             rule_label: ruleLabel,
             rule_score: item._nokiaScore ?? null,
@@ -342,7 +342,6 @@ router.post('/collect-theses', async (req, res) => {
             ml_probability: mlProbability,
             hybrid_label: hybridLabel,
             hybrid_reasons: reasonParts.join('; '),
-            final_label_used: finalLabelUsed
           };
 
           const thesisKey = makeThesisKey({

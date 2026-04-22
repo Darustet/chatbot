@@ -25,9 +25,9 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   ml_probability REAL,
   hybrid_label VARCHAR(64),
   hybrid_reasons TEXT,
-  final_label_used VARCHAR(64),
+  final_label_id INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (label_id) REFERENCES labels(id)
+  FOREIGN KEY (final_label_id) REFERENCES labels(id)
 )`;
 
 const checkTheses = `SELECT COUNT(*) AS count FROM theses`;

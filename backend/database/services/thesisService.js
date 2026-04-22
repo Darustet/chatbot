@@ -34,11 +34,12 @@ function toTextOrNull(value) {
 	return String(value);
 }
 
-// resolve label_id from payload, if label_id is provided return it, otherwise try to resolve it from labelName 
-// or label, if not found create a new label and return its id
+// resolve final_label_id from payload, if final_label_id is provided return it, 
+// otherwise try to resolve it from labelName or label,
+// if not found create a new label and return its id
 function resolveLabelId(payload) {
-	if (payload.label_id !== undefined && payload.label_id !== null) {
-		return payload.label_id;
+	if (payload.final_label_id !== undefined && payload.final_label_id !== null) {
+		return payload.final_label_id;
 	}
 
 	const labelName = payload.labelName || payload.label;
@@ -72,7 +73,7 @@ function normalizeThesisPayload(payload = {}) {
 		thesisId: payload.thesisId ?? payload.thesis_id ?? null,
 		abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
 		publisher: payload.publisher ?? null,
-		label_id: resolveLabelId(payload),
+		final_label_id: resolveLabelId(payload),
 		rule_label: payload.rule_label ?? null,
 		rule_score: toIntOrNull(payload.rule_score),
 		rule_reasons: ruleReasonsStr,
@@ -80,7 +81,6 @@ function normalizeThesisPayload(payload = {}) {
 		ml_probability: toFloatOrNull(payload.ml_probability),
 		hybrid_label: payload.hybrid_label ?? null,
 		hybrid_reasons: payload.hybrid_reasons ?? null,
-		final_label_used: payload.final_label_used ?? payload.hybrid_label ?? payload.labelName ?? null
 	};
 }
 

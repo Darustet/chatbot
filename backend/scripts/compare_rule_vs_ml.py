@@ -51,9 +51,10 @@ def load_sqlite_data(db_path: Path) -> pd.DataFrame:
       t.id,
       t.title,
       t.abstract_text,
+      t.link,
       l.name AS rule_label
     FROM theses t
-    LEFT JOIN labels l ON l.id = t.label_id
+    LEFT JOIN labels l ON l.id = t.final_label_id
     """
 
     with sqlite3.connect(str(db_path)) as conn:
@@ -164,6 +165,7 @@ def main() -> None:
         "title",
         "abstract_text",
         "text",
+        "link",
     ]
 
     df.to_csv(output_all, index=False, columns=ordered_cols, encoding="utf-8")
