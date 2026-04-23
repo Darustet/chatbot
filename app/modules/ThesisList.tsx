@@ -40,11 +40,12 @@ const uniCodes = [
   {"uni": "University of Helsinki", "code": "HELDA"},
   {"uni": "Tampere University", "code": "TREPO"},
   {"uni": "Oulu University", "code": "OULUREPO"},
+  {"uni": "LUT University", "code": "LUTPUB"},
 ];
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 10;
+const RPP = 50;
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
@@ -89,17 +90,18 @@ export default function ThesisList() {
 
           // Select a few major universities to get a diverse set of theses
           const majorUniCodes = [
-            "10024%2F6",    // Metropolia
-            "10024%2F431",  // Haaga-Helia
+            "10024%2F6",       // Metropolia
+            "10024%2F431",     // Haaga-Helia
             // "10024%2F2124", // Oulu
             // "10024%2F13",   // Tampere
             // "10024%2F15",   // Turku
             // "10024%2F14",   // Satakunnan
-            "10024%2F12",  // Laurea
+            "10024%2F12",      // Laurea
             "AALTO",           // Aalto University
             "TREPO",           // Tampere University
             "HELDA",           // University of Helsinki
             "OULUREPO",        // Oulu University
+            "LUTPUB",          // LUT University
           ];
 
           // Fetch from each university with increased results per page
@@ -210,6 +212,8 @@ export default function ThesisList() {
           link = `https://helda.helsinki.fi${handle}`;
         } else if (universityCode === "OULUREPO") {
           link = `https://oulurepo.oulu.fi${handle}`;
+        } else if (universityCode === "LUTPUB") {
+          link = `https://lutpub.lut.fi/${handle}`;
         } else {
           link = `https://theseus.fi${handle}`;
         }

@@ -3,6 +3,7 @@ from . import theseus_provider
 from . import trepo_provider
 from . import helda_provider
 from . import oulurepo_provider
+from . import lutpub_provider
 
 # Provider map: university code -> provider module
 PROVIDER_MAP = {
@@ -11,6 +12,7 @@ PROVIDER_MAP = {
     'TREPO': trepo_provider,
     'HELDA': helda_provider,
     'OULUREPO': oulurepo_provider,
+    'LUTPUB': lutpub_provider,
 }
 
 # Get the appropriate provider module for a university code.
@@ -24,4 +26,10 @@ def get_provider(uni_code):
     # Look up the provider map, returns the matching provider module. Defaults to theseus_provider if code is unrecognized.
     return PROVIDER_MAP.get(uni_upper, theseus_provider)
 
-__all__ = ['aalto_provider', 'theseus_provider', 'trepo_provider', 'oulurepo_provider', 'helda_provider', 'get_provider']
+__all__ = ['aalto_provider',
+           'helda_provider',
+           'theseus_provider',
+           'trepo_provider',
+           'oulurepo_provider',
+           'lutpub_provider',
+           'get_provider']
