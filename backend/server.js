@@ -39,14 +39,13 @@ app.get("/uni/:uni", async (req, res) => {
     console.log('rpp: ', rpp);
     // Minimum year filter, default 2023
     const yearMin = parseInt(String(req.query.yearMin || "2023"), 10) || 2023;
-    // Current year for filtering
-    const d = new Date();
-    const yearNow = d.getFullYear();
+    // Maximum year filter, default current year
+    const yearMax = parseInt(String(req.query.yearMax || String(new Date().getFullYear())), 10) || new Date().getFullYear();
 
-    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearNow=${yearNow})`);
+    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearMax=${yearMax})`);
 
     // Build context for provider functions
-    const context = { uniCode, query, rpp, yearMin, yearNow, uniCodes };
+    const context = { uniCode, query, rpp, yearMin, yearMax, uniCodes };
     const provider = getProvider(uniCode);
     const isKnownUni = validUniCodes.includes(encodeURIComponent(uniCode));
     if (!isKnownUni) {
@@ -83,7 +82,10 @@ app.get("/uni/:uni", async (req, res) => {
 
         const deduplicated = deduplicate(normalized);
 
-        const filtered = deduplicated.filter(t => parseInt(t.thesis.year, 10) > 2022);
+        const filtered = deduplicated.filter(t => {
+            const year = parseInt(t.thesis.year, 10);
+            return year >= yearMin && year <= yearMax;
+        });
         if (filtered.length === 0) {
             console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });

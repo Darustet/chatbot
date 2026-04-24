@@ -9,9 +9,9 @@ const TREPO_MASTER_SCOPE = "10024/105882";
 
 export const TrepoProvider = {
   // Build both TREPO search URLs
-  buildUrls({ query, rpp, yearMin, yearNow }) {
+  buildUrls({ query, rpp, yearMin, yearMax }) {
     const encodedQuery = encodeURIComponent(query);
-    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearMax}]`);
 
     const bachelorUrl = `${BASE_URL}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_BACHELOR_SCOPE}&rpp=${rpp}`;
     const masterUrl = `${BASE_URL}discover?filtertype_1=julkaisuvuosi&filter_relational_operator_1=equals&filter_1=${encodedDateFilter}&submit_apply_filter=&query=nokia&scope=${TREPO_MASTER_SCOPE}&rpp=${rpp}`;

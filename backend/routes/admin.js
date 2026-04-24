@@ -111,6 +111,8 @@ async function fetchScoredThesesByUniversity(context) {
 
   if (provider.buildUrls) {
     const urls = provider.buildUrls(context);
+    console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
+    console.log(`Fetching data from Master URL: ${urls[1]}`);
     const responses = await Promise.all(
       urls.map((url) =>
         axios.get(url, {
@@ -124,6 +126,7 @@ async function fetchScoredThesesByUniversity(context) {
     parsed = responses.flatMap((response) => provider.parse(response));
   } else {
     const url = provider.buildUrl(context);
+    console.log(`Fetching data from Bachelor URL: ${url}`);
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -137,7 +140,10 @@ async function fetchScoredThesesByUniversity(context) {
 
   const deduplicated = deduplicate(normalized);
 
-  const filtered = deduplicated.filter((item) => parseInt(item.thesis?.year, 10) >= context.yearMin);
+  const filtered = deduplicated.filter((item) => {
+    const year = parseInt(item.thesis?.year, 10);
+    return year >= context.yearMin && year <= context.yearMax;
+  });
 
   if (filtered.length === 0) {
     console.warn(`No thesis data found after filtering by year`);
@@ -252,8 +258,8 @@ router.post('/collect-theses', async (req, res) => {
     // Default rpp is 30 (capped at 200)
     const rpp = Math.min(parseInt(String(req.body?.rpp || '30'), 10) || 30, 200);
     const yearMin = parseInt(String(req.body?.yearMin || '2023'), 10) || 2023;
-    const yearNow = new Date().getFullYear();
-    console.log(`Got request body: uniCode: ${uniCode}, query: ${query}, rpp: ${rpp}, yearMin: ${yearMin}, yearNow: ${yearNow}`);
+    const yearMax = parseInt(String(req.body?.yearMax || new Date().getFullYear()), 10) || new Date().getFullYear();
+    console.log(`Got request body: uniCode: ${uniCode}, query: ${query}, rpp: ${rpp}, yearMin: ${yearMin}, yearMax: ${yearMax}`);
 
     if (!validUniCodeSet.has(uniCode)) {
       return res.status(400).json({ error: `Unknown university code: ${uniCode}` });
@@ -299,7 +305,7 @@ router.post('/collect-theses', async (req, res) => {
       processSummary.byUniversity[code] = uniSummary;
 
       try {
-        const context = { uniCode: code, query, rpp, yearMin, yearNow, uniCodes };
+        const context = { uniCode: code, query, rpp, yearMin, yearMax, uniCodes };
         const thesesWithScores = await fetchScoredThesesByUniversity(context);
 
         uniSummary.fetched = thesesWithScores.length;

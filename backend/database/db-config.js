@@ -17,7 +17,6 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   thesisId VARCHAR(250),
   abstract_text TEXT,
   publisher VARCHAR(250),
-  label_id INTEGER,
   rule_label VARCHAR(64),
   rule_score INTEGER,
   rule_reasons TEXT,
@@ -30,6 +29,23 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   FOREIGN KEY (final_label_id) REFERENCES labels(id)
 )`;
 
+const thesisExportView = `CREATE VIEW IF NOT EXISTS theses_export_view AS
+SELECT
+  t.id,
+  t.university,
+  t.author,
+  t.year,
+  t.title,
+  t.link,
+  t.rule_score,
+  t.ml_probability,
+  l.name AS final_label,
+  t.rule_reasons,
+  t.abstract_text
+FROM theses t
+LEFT JOIN labels l
+  ON l.id = t.final_label_id`;
+
 const checkTheses = `SELECT COUNT(*) AS count FROM theses`;
 
 const labelsData = `INSERT INTO labels (name) VALUES
@@ -39,4 +55,4 @@ const labelsData = `INSERT INTO labels (name) VALUES
 
 const checkLabels = `SELECT COUNT(*) AS count FROM labels`;
 
-export {filename, theses, labels, checkTheses, labelsData, checkLabels};
+export {filename, theses, labels, thesisExportView, checkTheses, labelsData, checkLabels};

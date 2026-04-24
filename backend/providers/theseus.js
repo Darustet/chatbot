@@ -19,11 +19,11 @@ const toTheseusScope = (uniCode) => {
 
 export const TheseusProvider = {
   // Build the API URL based on the query and filters
-  buildUrl({ query, rpp, uniCode, yearMin, yearNow }) {
+  buildUrl({ query, rpp, uniCode, yearMin, yearMax }) {
     const encodedQuery = encodeURIComponent(query);
-    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearMax}]`);
     const encodedUniCode = toTheseusScope(uniCode);
-    console.log('from theseusExampleUrl.fi: ', 'query:', query, 'rpp:', rpp, 'uniCode:', uniCode, 'yearMin:', yearMin, 'yearNow:', yearNow);
+    console.log('from theseusExampleUrl.fi: ', 'query:', query, 'rpp:', rpp, 'uniCode:', uniCode, 'yearMin:', yearMin, 'yearMax:', yearMax);
     // TODO: Currently "all" return only Metropolia
     if (uniCode === "all") {
       return `${BASE_URL}discover?scope=10024%2F6&query=${encodedQuery}&submit=&filtertype_0=vuosi&filter_relational_operator_0=equals&filter_0=${encodedDateFilter}&rpp=${rpp}`;

@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { filename, theses, labels, labelsData, checkLabels } from './db-config.js';
+import { filename, theses, labels, thesisExportView, labelsData, checkLabels } from './db-config.js';
 
 console.log(`Opening SQLite database at: ${filename}`);
 const db = new Database(filename);
@@ -9,6 +9,7 @@ db.pragma('foreign_keys = ON');
 // init tables, use exec only for CREATE TABLE
 db.exec(labels);
 db.exec(theses);
+db.exec(thesisExportView);
 
 // check if the labels table is empty
 const labelsCount = (db.prepare(checkLabels).get()).count;
