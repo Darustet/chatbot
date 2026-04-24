@@ -201,6 +201,14 @@ export default function ThesisList() {
         const nokiaScore = item._nokiaScore ?? item.thesis?._nokiaScore ?? 0;
         const handle = item?.thesis?.handle ?? item?.handle ?? "";
         const universityCode = item.thesis?.universityCode ?? "";
+
+        //const abstracts = item?.thesis?.abstractByLanguage || item?.abstractByLanguage;
+        //const abstract =
+          //abstracts?.en ||
+          //abstracts?.fi ||
+          //Object.values(abstracts || {})[0] ||
+          //"No abstract available";
+
         const isNokiaProject = item.thesis?.isNokiaProject ?? "";
         const evidence = item.thesis?.evidence ?? "";
 
@@ -227,6 +235,7 @@ export default function ThesisList() {
           date,
           nokiaScore,
           link,
+          //abstract,
           isNokiaProject,
           evidence
         };
@@ -378,6 +387,14 @@ export default function ThesisList() {
               const year = String(item?.thesis?.year || item?.year || item?.thesis?.date || item?.date || "Unknown Date");
               const universityCode = String(item?.thesis?.universityCode || item?.universityCode || "unknown university code");
               const thesisId = String(item?.thesis?.thesisId || item?.thesisId || `unknown-id`);
+
+              //const abstracts = item?.thesis?.abstractByLanguage || item?.abstractByLanguage;
+              //const abstract =
+                //abstracts?.en ||
+                //abstracts?.fi ||
+                //Object.values(abstracts || {})[0] ||
+                //"No abstract available";
+
               const isNokiaProject = String(item?.thesis?.isNokiaProject || item?.isNokiaProject || 'unknown');
               const evidence = String(item?.thesis?.evidence || item?.evidence || 'unknown');
 

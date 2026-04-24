@@ -10,6 +10,7 @@ export const DownloadCsv = ({ elements }) => {
     'date',
     'nokiaScore',
     'link',
+    //'abstract',
     'isNokiaProject',
     'evidence'
   ];
