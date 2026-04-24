@@ -4,7 +4,7 @@ import { analyzeThesisLink } from "./openAiDecision.js";
 
 // Link for Helda doc api
 const HELDA_API_BASE = "https://helda.helsinki.fi/server/api/";
-const BASE_URL = "https://helda.helsinki.fi/"
+const BASE_URL = "https://helda.helsinki.fi";
 const HELDA_BACHELOR_SCOPE = "09dc20ad-06ac-4423-bab3-4d725a7efbe";
 const HELDA_MASTER_SCOPE = "13d90218-edf0-4beb-887b-71fc1ecea33e";
 
@@ -24,13 +24,13 @@ export const HeldaProvider = {
     return response.data?._embedded?.searchResult?._embedded?.objects ?? [];
   },
 
-  normalize(objects) {
+  async normalize(objects) {
     return Promise.all(
       objects.map(async (obj, index) => {
         const item = obj._embedded?.indexableObject ?? {};
         const thesisId = item.id || `unknown-id-${index}`;
         const title = item.name || "No Title";
-        const handle = thesisId ? `/items/${thesisId}` : "";
+        const handle = item.handle ? `/handle/${item.handle}` : "";
         const authorArr = item.metadata?.["dc.contributor.author"] ?? [];
         const dateIssuedArr = item.metadata?.["dc.date.issued"] ?? [];
         const publisherArr = item.metadata?.["dc.contributor"] ?? [];
@@ -66,5 +66,5 @@ export const HeldaProvider = {
         });
       })
     );
-  }
-}
+  },
+};
