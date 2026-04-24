@@ -85,6 +85,12 @@ Produced artifacts:
 
 These files are intended to be reproducible from the scripts above.
 
+## Runtime integration
+
+- The trained model artifact (`backend/data/exports/tfidf_model.pkl`) is loaded by the Flask service endpoint `POST /classify-thesis`.
+- During `POST /api/admin/collect-theses`, the Node backend calls `POST /classify-thesis` for each thesis (title + abstract text).
+- Classification probability is persisted to SQLite as `ml_probability` together with `ml_label` and `hybrid_label`.
+
 ## Environment notes
 
 Minimum Python packages needed:
