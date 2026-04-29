@@ -25,6 +25,8 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   hybrid_label VARCHAR(64),
   hybrid_reasons TEXT,
   final_label_id INTEGER,
+  openAI_decision TEXT CHECK(openAI_decision IN ('yes', 'no', 'unknown')) DEFAULT 'unknown',
+  openAI_evidence TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (final_label_id) REFERENCES labels(id)
 )`;
@@ -41,7 +43,9 @@ SELECT
   t.ml_probability,
   l.name AS final_label,
   t.rule_reasons,
-  t.abstract_text
+  t.abstract_text,
+  t.openAI_decision,
+  t.openAI_evidence
 FROM theses t
 LEFT JOIN labels l
   ON l.id = t.final_label_id`;
