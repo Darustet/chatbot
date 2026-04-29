@@ -1,6 +1,6 @@
 import { toAbstractByLanguage } from "./helpers.js";
 import { normalizeThesis } from "./types.js";
-import { analyzeThesisLink } from "./openAiDecision.js";
+import { analyzeAbstract } from "./openAiDecision.js";
 
 // Link for Helda doc api
 const HELDA_API_BASE = "https://helda.helsinki.fi/server/api/";
@@ -45,12 +45,13 @@ export const HeldaProvider = {
 
         const abstracts = item.metadata?.["dc.description.abstract"]; // array of { value, language }
         const abstractByLanguage = toAbstractByLanguage(abstracts);
+        const abstract = Object.values(abstractByLanguage).join(" ").toLowerCase();
 
         const thesisUrl = /^https?:\/\//i.test(handle)
           ? handle
           : new URL(handle, BASE_URL).href;
 
-        const getOpenAIDecision = await analyzeThesisLink(thesisUrl);
+        const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
 
         return normalizeThesis({
           thesisId,

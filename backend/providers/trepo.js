@@ -2,7 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
 import { fetchDetailPageAbstracts, runWithConcurrency } from "./helpers.js";
-import { analyzeThesisLink } from "./openAiDecision.js"
+import { analyzeAbstract } from "./openAiDecision.js"
 
 const BASE_URL = "https://trepo.tuni.fi/";
 const TREPO_BACHELOR_SCOPE = "10024/105881";
@@ -86,12 +86,13 @@ export const TrepoProvider = {
 
       //Extract abstract
       const abstractByLanguage = await fetchDetailPageAbstracts(handle,BASE_URL);
+      const abstract = Object.values(abstractByLanguage).join(" ").toLowerCase();
 
       const thesisUrl = /^https?:\/\//i.test(handle)
-      ? handle
-      : new URL(handle, BASE_URL).href;
+        ? handle
+        : new URL(handle, BASE_URL).href;
 
-      const getOpenAIDecision = await analyzeThesisLink(thesisUrl)
+      const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
 
       return normalizeThesis({
         handle,
