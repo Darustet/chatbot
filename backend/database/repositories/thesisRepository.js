@@ -19,9 +19,9 @@ const createThesis = (thesis) => {
   .prepare(`
     INSERT INTO theses (
       title, author, year, university, university_code, handle, link, thesisId,
-      abstract_text, publisher, final_label_id, rule_label, rule_score, rule_reasons,
+      abstract_text, final_label_id, rule_label, rule_score, rule_reasons,
       ml_label, ml_probability, hybrid_label, hybrid_reasons, openAI_decision, openAI_evidence
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
     .run(
@@ -34,7 +34,6 @@ const createThesis = (thesis) => {
     thesis.link,
     thesis.thesisId,
     thesis.abstract_text,
-    thesis.publisher,
     thesis.final_label_id,
     thesis.rule_label,
     thesis.rule_score,
@@ -57,7 +56,7 @@ const updateThesis = (id, thesis) => {
     .prepare(`
       UPDATE theses SET
         title = ?, author = ?, year = ?, university = ?, university_code = ?, handle = ?, link = ?,
-        thesisId = ?, abstract_text = ?, publisher = ?, final_label_id = ?, rule_label = ?, rule_score = ?, rule_reasons = ?,
+        thesisId = ?, abstract_text = ?, final_label_id = ?, rule_label = ?, rule_score = ?, rule_reasons = ?,
         ml_label = ?, ml_probability = ?, hybrid_label = ?, hybrid_reasons = ?,
         openAI_decision = ?, openAI_evidence = ?
       WHERE id = ?
@@ -72,7 +71,6 @@ const updateThesis = (id, thesis) => {
       thesis.link,
       thesis.thesisId,
       thesis.abstract_text,
-      thesis.publisher,
       thesis.final_label_id,
       thesis.rule_label,
       thesis.rule_score,

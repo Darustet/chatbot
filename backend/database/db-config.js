@@ -16,7 +16,6 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   link VARCHAR(500),
   thesisId VARCHAR(250),
   abstract_text TEXT,
-  publisher VARCHAR(250),
   rule_label VARCHAR(64),
   rule_score INTEGER,
   rule_reasons TEXT,
