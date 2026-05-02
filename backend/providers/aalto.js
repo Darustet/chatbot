@@ -8,9 +8,9 @@ const AALTO_MASTER_SCOPE = "663a76cb-af53-4943-a224-19e055302c24";
 
 export const AaltoProvider = {
 
-  buildUrls: function({ query, rpp, yearMin, yearNow }) {
+  buildUrls: function({ query, rpp, yearMin, yearMax }) {
     const encodedQuery = encodeURIComponent(query);
-    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearMax}]`);
 
     const bachelorUrl = `${AALTO_API_BASE}/discover/search/objects?scope=${AALTO_BACHELOR_SCOPE}&query=${encodedQuery}&configuration=default&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
 

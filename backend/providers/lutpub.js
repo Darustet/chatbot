@@ -9,9 +9,9 @@ const LUT_MASTER_SCOPE = "10024/158299";
 
 export const LutPubProvider = {
   // Build both LUT search URLs
-  buildUrls({ query, rpp, yearMin, yearNow }) {
+  buildUrls({ query, rpp, yearMin, yearMax }) {
     const encodedQuery = encodeURIComponent(query);
-    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearMax}]`);
 
     //const bachelorUrl = `${BASE_URL}discover?&submit_apply_filter=&query=nokia&scope=${LUT_BACHELOR_SCOPE}&rpp=${rpp}`;
     const bachelorUrl =`${BASE_URL}discover?query=${encodedQuery}&scope=${LUT_BACHELOR_SCOPE}&filtertype=dateIssued&filter_relational_operator=equals&filter=${encodedDateFilter}&rpp=${rpp}`;

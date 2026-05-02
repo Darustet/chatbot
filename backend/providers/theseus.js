@@ -9,13 +9,21 @@ import {
 const BASE_URL = "https://www.theseus.fi/";
 // const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
 
+const toTheseusScope = (uniCode) => {
+  try {
+    return encodeURIComponent(decodeURIComponent(String(uniCode || "")));
+  } catch {
+    return encodeURIComponent(String(uniCode || ""));
+  }
+};
+
 export const TheseusProvider = {
   // Build the API URL based on the query and filters
-  buildUrl({ query, rpp, uniCode, yearMin, yearNow }) {
+  buildUrl({ query, rpp, uniCode, yearMin, yearMax }) {
     const encodedQuery = encodeURIComponent(query);
-    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
-    const encodedUniCode = encodeURIComponent(uniCode);
-    console.log('from theseusExampleUrl.fi: ', 'query:', query, 'rpp:', rpp, 'uniCode:', uniCode, 'yearMin:', yearMin, 'yearNow:', yearNow);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearMax}]`);
+    const encodedUniCode = toTheseusScope(uniCode);
+    console.log('from theseusExampleUrl.fi: ', 'query:', query, 'rpp:', rpp, 'uniCode:', uniCode, 'yearMin:', yearMin, 'yearMax:', yearMax);
     // TODO: Currently "all" return only Metropolia
     if (uniCode === "all") {
       return `${BASE_URL}discover?scope=10024%2F6&query=${encodedQuery}&submit=&filtertype_0=vuosi&filter_relational_operator_0=equals&filter_0=${encodedDateFilter}&rpp=${rpp}`;
@@ -35,6 +43,7 @@ export const TheseusProvider = {
   async normalize({ elements, $ }, { uniCode, uniCodes }) {
 
     const CONCURRENCY_LIMIT = 3;
+    const normalizedScope = toTheseusScope(uniCode);
 
     // Create lazy task functions so requests start only when each batch is executed.
     const tasks = elements.map((element) => async () => {
@@ -62,7 +71,7 @@ export const TheseusProvider = {
       }
 
       // university/publisher
-      const uniMatch = uniCodes.find((u) => u.code === encodeURIComponent(uniCode));
+      const uniMatch = uniCodes.find((u) => toTheseusScope(u.code) === normalizedScope);
       const publisher = uniMatch ? uniMatch.uni : "Unknown University";
 
       // Extract year
@@ -87,7 +96,7 @@ export const TheseusProvider = {
         title: title || "No Title",
         author: author || "Unknown Author",
         year: year || "Unknown Date",
-        publisher: publisher ? `${publisher} UAS` : "Unknown UAS",
+        publisher: publisher ? `${publisher}` : "Unknown UAS",
         universityCode: uniCode,
         abstractByLanguage,
       });

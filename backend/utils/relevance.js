@@ -126,7 +126,7 @@ const normalize = (value) => String(value || "").toLowerCase().trim();
 const toLabel = (score) => {
   if (score >= 8) return "NOKIA_COLLABORATION"; // 
   if (score >= 3) return "AMBIGUOUS"; 
-  return "NO_INDICATION"; // No indication that the thesis is connected to Nokia Corporation
+  return "NO_INDICATION_OF_COLLABORATION"; // No indication that the thesis is connected to Nokia Corporation
 };
 
 const countPhraseMatches = (text, phrases) => {
@@ -185,7 +185,7 @@ export const calculateNokiaCollaborationScoreByRules = (thesis, lang = "en") => 
   if (!containsNokia(combinedText)) {
     return {
       _nokiaScore: 0,
-      _nokiaRelevance: "NO_INDICATION",
+      _nokiaRelevance: "NO_INDICATION_OF_COLLABORATION",
       _nokiaReasons: ["No Nokia mention"]
     };
   }
@@ -266,7 +266,6 @@ export const calculateNokiaCollaborationScoreByRules = (thesis, lang = "en") => 
     nokiaScore += SCORE.VENDOR_NEGATIVE;
     reasons.push("Vendor comparison context");
   }
-
   return {
     _nokiaScore: nokiaScore,
     _nokiaRelevance: toLabel(nokiaScore),

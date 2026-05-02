@@ -36,8 +36,8 @@ const uniCodes = [
   {"uni":  "Vaasa UAS", "code": "10024%2F1660"},
   {"uni": "Yrkeshögskolan Arcada UAS", "code": "10024%2F4"},
   {"uni":  "Yrkeshögskolan Novia UAS", "code": "10024%2F2188"},
-  {"uni": "Aalto", "code": "AALTO"},
-  {"uni": "Helsinki", "code": "HELDA"},
+  {"uni": "Aalto University", "code": "AALTO"},
+  {"uni": "University of Helsinki", "code": "HELDA"},
   {"uni": "Tampere University", "code": "TREPO"},
   {"uni": "Oulu University", "code": "OULUREPO"},
   {"uni": "LUT University", "code": "LUTPUB"},
@@ -187,7 +187,7 @@ export default function ThesisList() {
   const relevanceOrder: Record<string, number> = {
     NOKIA_COLLABORATION: 0,
     AMBIGUOUS: 1,
-    NO_INDICATION: 2,
+    NO_INDICATION_OF_COLLABORATION: 2,
     NOT_SCORED: 3,
   };
 
@@ -231,7 +231,7 @@ export default function ThesisList() {
 
   const getItemRelevance = (item: any) => {
     const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
-    const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION"];
+    const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION_OF_COLLABORATION"];
     const hasKnownRelevance =
       typeof rawNokiaRelevance === "string" && validNokiaLabels.includes(rawNokiaRelevance);
     return hasKnownRelevance ? rawNokiaRelevance : "NOT_SCORED";
@@ -410,7 +410,7 @@ export default function ThesisList() {
 
               // Guard legacy/unscored items that do not include Nokia scoring fields yet.
               const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
-              const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION"];
+              const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION_OF_COLLABORATION"];
               const hasKnownRelevance =
                 typeof rawNokiaRelevance === "string" && validNokiaLabels.includes(rawNokiaRelevance);
               const nokiaRelevance = hasKnownRelevance ? rawNokiaRelevance : "NOT_SCORED";
@@ -425,7 +425,7 @@ export default function ThesisList() {
                 relevanceColor = "#2ecc71"; // Green for high
               } else if (nokiaRelevance === "AMBIGUOUS") {
                 relevanceColor = "#f39c12"; // Orange for medium
-              } else if (nokiaRelevance === "NO_INDICATION") {
+              } else if (nokiaRelevance === "NO_INDICATION_OF_COLLABORATION") {
                 relevanceColor = "#e74c3c"; // Red for low
               }
 
