@@ -81,6 +81,8 @@ function normalizeThesisPayload(payload = {}) {
 		ml_probability: toFloatOrNull(payload.ml_probability),
 		hybrid_label: payload.hybrid_label ?? null,
 		hybrid_reasons: payload.hybrid_reasons ?? null,
+		openAI_decision: payload.openAI_decision ?? null,
+		evidence: payload.openAI_evidence ?? null,
 	};
 }
 
