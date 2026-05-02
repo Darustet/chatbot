@@ -8,9 +8,9 @@ const BASE_URL = "https://oulurepo.oulu.fi/";
 const OULUREPO_SCOPE = "10024/1102";
 
 export const OuluRepoProvider = {
-  buildUrl({ query, rpp, yearMin, yearNow }) {
+  buildUrl({ query, rpp, yearMin, yearMax }) {
     const encodedQuery = encodeURIComponent(query);
-    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearMax}]`);
 
     return `${BASE_URL}discover?query=${encodedQuery}&scope=${OULUREPO_SCOPE}&filtertype=dateIssued&filter_relational_operator=equals&filter=${encodedDateFilter}&rpp=${rpp}`
    ;

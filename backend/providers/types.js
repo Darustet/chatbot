@@ -1,9 +1,14 @@
-// add optional thesisId to the normalized thesis object, and update aalto provider to include it in the normalization process
-export function normalizeThesis({ handle, thesisId, title, author, year, publisher, universityCode, abstractByLanguage, isNokiaProject, evidence }) {
+import { resolveThesisLink } from "./helpers.js";
+
+// add optional thesisId to the normalized thesis object
+export function normalizeThesis({ handle, thesisId, title, author, year, publisher, universityCode, abstractByLanguage }) {
+  const link = resolveThesisLink(handle, universityCode);
+
   return {
     thesis: { 
       handle, 
-      thesisId, 
+      link,
+      thesisId,
       title, 
       author, 
       year, 
@@ -14,3 +19,5 @@ export function normalizeThesis({ handle, thesisId, title, author, year, publish
       evidence}
   };
 }
+
+export { resolveThesisLink };

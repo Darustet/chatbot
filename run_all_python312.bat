@@ -13,7 +13,7 @@ REM Start Python service
 REM -------------------------
 echo.
 echo Starting Python summary service...
-start "Python Service" cmd /k "cd /d "%~dp0backend\summary-script" && call .venv\Scripts\activate.bat && python app.py"
+start "Python Service" cmd /k ""%~dp0backend\summary-script\.venv\Scripts\python.exe" "%~dp0backend\summary-script\app.py""
 
 REM -------------------------
 REM Start Node backend
@@ -33,7 +33,7 @@ echo.
 echo ============================================
 echo All services started.
 echo.
-echo Python Service: Running on port 5000
+echo Python Service: Running on port 5001
 echo Node Backend:   Running on port 3000
 echo Expo Frontend:  Running on port 8081
 echo.

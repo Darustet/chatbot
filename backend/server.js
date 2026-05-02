@@ -1,55 +1,20 @@
 import axios from "axios";
 import express from "express";
+import 'dotenv/config';
+import db from "./database/db.js";
 import * as cheerio from "cheerio";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
-import { deduplicate } from "./providers/helpers.js";
+import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
+import { uniCodes, validUniCodes } from "./config/universities.js";
 
 const app = express();
 
 // Add JSON body parser middleware
 app.use(express.json());
 
-const uniCodes = [
-  {"uni": "All", "code": "all"},
-  {"uni": "Centria", "code": "10024%2F1900"},
-  {"uni": "Diakonia", "code": "10024%2F1552"},
-  {"uni": "Haaga-Helia", "code": "10024%2F431"},
-  {"uni": "Hämeen", "code": "10024%2F1766"},
-  {"uni": "Humanistinen", "code": "10024%2F2050"},
-  {"uni": "Jyväskylä", "code": "10024%2F5"},
-  {"uni": "Kaakkois-suomen", "code": "10024%2F12136"},
-  {"uni": "Kajaani", "code": "10024%2F1967"},
-  {"uni": "Karelia", "code": "10024%2F1620"},
-  {"uni": "Kymenlaakson", "code": "10024%2F1493"},
-  {"uni": "Lab", "code": "10024%2F266372"},
-  {"uni": "Lahden", "code":"10024%2F10"},
-  {"uni": "Lapin", "code": "10024%2F69720"},
-  {"uni": "Laurea", "code": "10024%2F12"},
-  {"uni": "Metropolia", "code": "10024%2F6"},
-  {"uni": "Mikkelin", "code": "10024%2F2074"},
-  {"uni": "Oulu", "code": "10024%2F2124"},
-  {"uni": "Poliisi", "code": "10024%2F86551"},
-  {"uni": "Saimaan", "code": "10024%2F1567"},
-  {"uni": "Satakunnan", "code": "10024%2F14"},
-  {"uni": "Savonia", "code": "10024%2F1476"},
-  {"uni": "Seinäjoen", "code": "10024%2F1"},
-  {"uni": "Tampere", "code": "10024%2F13"},
-  {"uni": "Turun", "code": "10024%2F15"},
-  {"uni":  "Vaasa", "code": "10024%2F1660"},
-  {"uni": "Yrkeshögskolan Arcada", "code": "10024%2F4"},
-  {"uni":  "Yrkeshögskolan Novia", "code": "10024%2F2188"},
-  {"uni": "Aalto", "code": "AALTO"},
-  {"uni": "Helsinki", "code": "HELDA"},
-  {"uni": "Tampere university", "code": "TREPO"},
-  {"uni": "Oulu University", "code": "OULUREPO"},
-  {"uni": "LUT University", "code": "LUTPUB"},
-];
-
-
-const validUniCodes = uniCodes.map(u => u.code);
 console.log('validUnicodes: ', validUniCodes);
 
 app.use(function(req, res, next) {
@@ -74,14 +39,13 @@ app.get("/uni/:uni", async (req, res) => {
     console.log('rpp: ', rpp);
     // Minimum year filter, default 2023
     const yearMin = parseInt(String(req.query.yearMin || "2023"), 10) || 2023;
-    // Current year for filtering
-    const d = new Date();
-    const yearNow = d.getFullYear();
+    // Maximum year filter, default current year
+    const yearMax = parseInt(String(req.query.yearMax || String(new Date().getFullYear())), 10) || new Date().getFullYear();
 
-    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearNow=${yearNow})`);
+    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearMax=${yearMax})`);
 
     // Build context for provider functions
-    const context = { uniCode, query, rpp, yearMin, yearNow, uniCodes };
+    const context = { uniCode, query, rpp, yearMin, yearMax, uniCodes };
     const provider = getProvider(uniCode);
     const isKnownUni = validUniCodes.includes(encodeURIComponent(uniCode));
     if (!isKnownUni) {
@@ -118,7 +82,10 @@ app.get("/uni/:uni", async (req, res) => {
 
         const deduplicated = deduplicate(normalized);
 
-        const filtered = deduplicated.filter(t => parseInt(t.thesis.year, 10) > 2022);
+        const filtered = deduplicated.filter(t => {
+            const year = parseInt(t.thesis.year, 10);
+            return year >= yearMin && year <= yearMax;
+        });
         if (filtered.length === 0) {
             console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
             return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
@@ -127,9 +94,12 @@ app.get("/uni/:uni", async (req, res) => {
         console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
 
         const thesesWithScores = filtered.map((t) => {
-            const scoreData = calculateNokiaCollaborationScoreByRules(t.thesis);
+            const thesis = t.thesis || {};
+            const link = thesis.link || resolveThesisLink(thesis.handle, thesis.universityCode || uniCode);
+            const thesisWithLink = { ...thesis, link };
+            const scoreData = calculateNokiaCollaborationScoreByRules(thesisWithLink);
             return {
-                thesis: t.thesis,
+                thesis: thesisWithLink,
                 _nokiaScore: scoreData._nokiaScore,
                 _nokiaRelevance: scoreData._nokiaRelevance,
                 _nokiaReasons: scoreData._nokiaReasons

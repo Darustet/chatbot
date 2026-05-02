@@ -16,6 +16,17 @@ backend/files/
 __pycache__/
 *.pyc
 *.pyo
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+
+# Generated metrics and analysis outputs
+backend/data/exports/*metrics*.json
+backend/data/exports/rule_vs_ml_*.json
+backend/data/exports/rule_vs_ml_*.csv
+backend/data/exports/tfidf_*.csv
+
 
 # macOS
 .DS_Store
@@ -25,3 +36,7 @@ __pycache__/
 
 expo-env.d.ts
 # @end expo-cli
+backend/theses.sqlite
+backend/data/exports/training_set_reviewed_2.csv
+backend/data/exports/tfidf_training_set.csv
+backend/data/exports/tfidf_training_set.csv

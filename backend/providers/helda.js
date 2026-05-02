@@ -10,9 +10,9 @@ const HELDA_MASTER_SCOPE = "13d90218-edf0-4beb-887b-71fc1ecea33e";
 
 export const HeldaProvider = {
   // rpp = results per page
-  buildUrls: function({ query, rpp, yearMin, yearNow }) {
+  buildUrls: function({ query, rpp, yearMin, yearMax }) {
     const encodedQuery = encodeURIComponent(query);
-    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearNow}]`);
+    const encodedDateFilter = encodeURIComponent(`[${yearMin} TO ${yearMax}]`);
 
     const bachelorUrl = `${HELDA_API_BASE}discover/search/objects?scope=${HELDA_BACHELOR_SCOPE}&query=${encodedQuery}&configuration=default&size=${rpp}&f.dateIssued=${encodedDateFilter},equals`;
 
