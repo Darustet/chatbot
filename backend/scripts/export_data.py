@@ -1,8 +1,11 @@
 import sqlite3
 import pandas as pd
+from pathlib import Path
 
-DB_PATH = "backend/theses.sqlite"
-OUTPUT_CSV = "backend/data/exports/tfidf_training_set.csv"
+BASE_DIR = Path(__file__).resolve().parents[1]
+
+DB_PATH = BASE_DIR / "database" / "theses.sqlite"
+OUTPUT_CSV = BASE_DIR / "data" / "exports" / "tfidf_training_set.csv"
 
 # exclude AMBIGUOUS from training
 MAP_AMBIGUOUS_TO_ZERO = False
