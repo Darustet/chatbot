@@ -6,6 +6,7 @@ const THESIS_BASE_URL_BY_UNI = {
   HELDA: "https://helda.helsinki.fi",
   TREPO: "https://trepo.tuni.fi",
   OULUREPO: "https://oulurepo.oulu.fi",
+  LUTPUB: "https://lutpub.lut.fi"
 };
 
 const THESEUS_BASE_URL = "https://www.theseus.fi";
