@@ -14,7 +14,14 @@ install_all.bat
 run_all.bat
 ```
 
-`run_all.bat` starts:
+From project root on Mac/Linux:
+
+```bat
+install_all.sh
+run_all.sh
+```
+
+`run_all.bat`or `run_all.sh` starts:
 
 - `backend/server.js` (Express)
 - `backend/summary-script/app.py` (Flask, via `.venv\Scripts\python.exe`)
@@ -111,4 +118,4 @@ Notes:
 
 3. Summary or classification errors after dependency updates
 
-- Re-run `install_all.bat` to refresh the summary-script environment.
+- Re-run `install_all.bat` or `run_all.sh` to refresh the summary-script environment.
