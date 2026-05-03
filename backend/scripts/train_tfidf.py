@@ -19,10 +19,11 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from pathlib import Path
 
 # configuration constants
-DEFAULT_INPUT_CSV = "backend/data/exports/tfidf_training_set.csv"
-
+BASE_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_INPUT_CSV = BASE_DIR / "data" / "exports" / "tfidf_training_set.csv"
 
 def parse_args() -> argparse.Namespace:
   parser = argparse.ArgumentParser(
