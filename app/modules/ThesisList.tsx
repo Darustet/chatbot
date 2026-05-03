@@ -40,12 +40,12 @@ const uniCodes = [
   {"uni": "University of Helsinki", "code": "HELDA"},
   {"uni": "Tampere University", "code": "TREPO"},
   {"uni": "Oulu University", "code": "OULUREPO"},
-  {"uni": "LUT University", "code": "LUTPUB"},
+  {"uni": "LUT University", "code": "LUTPUB"}
 ];
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 10;
+const RPP = 2;
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
@@ -209,8 +209,9 @@ export default function ThesisList() {
           //Object.values(abstracts || {})[0] ||
           //"No abstract available";
 
-        const isNokiaProject = item.thesis?.isNokiaProject ?? "";
-        const evidence = item.thesis?.evidence ?? "";
+        const openAI_decision = item.openAI_decision ?? item.thesis?.openAI_decision ?? "unknown";
+
+        const openAI_evidence = item.openAI_evidence ?? item.thesis?.openAI_evidence ?? "";
 
         let link = "";
 
@@ -225,7 +226,7 @@ export default function ThesisList() {
         } else if (universityCode === "LUTPUB") {
           link = `https://lutpub.lut.fi/${handle}`;
         } else {
-          link = `https://theseus.fi${handle}`;
+          link = `https://www.theseus.fi${handle}`;
         }
 
         return {
@@ -233,11 +234,11 @@ export default function ThesisList() {
           university,
           author,
           date,
-          nokiaScore,
           link,
+          nokiaScore,
           //abstract,
-          isNokiaProject,
-          evidence
+          openAI_decision,
+          openAI_evidence
         };
     });
   }, [theses]);
@@ -395,8 +396,8 @@ export default function ThesisList() {
                 //Object.values(abstracts || {})[0] ||
                 //"No abstract available";
 
-              const isNokiaProject = String(item?.thesis?.isNokiaProject || item?.isNokiaProject || 'unknown');
-              const evidence = String(item?.thesis?.evidence || item?.evidence || 'unknown');
+              const openAI_decision = String(item?.thesis?.openAI_decision || item?.openAI_decision || 'unknown');
+              const openAI_evidence = String(item?.thesis?.openAI_evidence || item?.openAI_evidence || 'unknown');
 
               // Enhanced publisher extraction with multiple fallbacks
               // First check if university name is stored directly (from our data enhancement)
@@ -463,7 +464,7 @@ export default function ThesisList() {
                       author,
                       year,
                       publisher,
-                      universityCode,
+                      universityCode
                     }
                   }}
                 >
@@ -597,7 +598,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
-    padding: 20,
+    padding: 20
   },
   filterSection: {
     marginBottom: 30,
@@ -607,13 +608,13 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowRadius: 5
   },
   filterLabel: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
-    textAlign: "center",
+    textAlign: "center"
   },
   searchBar: {
     fontSize: 16,
@@ -622,27 +623,27 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginBottom: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#fff"
   },
   filterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 20
   },
   dropdownContainer: {
     flex: 1,
-    marginRight: 10,
+    marginRight: 10
   },
   uniSelected: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
     padding: 10,
-    backgroundColor: "#fff",
+    backgroundColor: "#fff"
   },
   uniSelectorText: {
-    fontSize: 16,
+    fontSize: 16
   },
   uniSelector: {
     borderWidth: 1,
@@ -650,7 +651,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 5,
     backgroundColor: "#fff",
-    marginVertical: 2,
+    marginVertical: 2
   },
   inputField: {
     flex: 1,
@@ -659,35 +660,35 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     backgroundColor: "#fff",
-    marginLeft: 10,
+    marginLeft: 10
   },
   searchButton: {
     alignSelf: "center",
     backgroundColor: "#007BFF",
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 8
   },
   searchButtonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 16
   },
   buttonRow: {
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   downloadWrapper: {
     position: "absolute",
-    right: 0,
+    right: 0
   },
   loadingIndicator: {
-    marginTop: 20,
+    marginTop: 20
   },
   singleThesis: {
     margin: 10,
     flex: 1,
-    maxWidth: "30%",
+    maxWidth: "30%"
   },
   hovered: {
     position: "absolute",
@@ -696,30 +697,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    borderRadius: 10,
+    borderRadius: 10
   },
   hoveredText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "bold"
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 20
   },
   errorText: {
     fontSize: 16,
     color: '#e74c3c',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 20
   },
   retryButton: {
     backgroundColor: '#007BFF',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 8
   },
   loadingContainer: {
     flex: 1,
@@ -729,7 +730,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: '#666'
   },
   emptyContainer: {
     flex: 1,
@@ -753,7 +754,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     margin: 10,
     flex: 1,
-    maxWidth: "30%",
+    maxWidth: "30%"
   },
   relevanceIndicator: {
     position: 'absolute',
@@ -762,11 +763,11 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     paddingHorizontal: 12,
     borderRadius: 8,
-    zIndex: 2,
+    zIndex: 2
   },
   relevanceText: {
     color: 'white',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
 });
