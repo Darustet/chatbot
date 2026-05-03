@@ -30,7 +30,8 @@ export const uniCodes = [
   { uni: 'Aalto University', code: 'AALTO' },
   { uni: 'University of Helsinki', code: 'HELDA' },
   { uni: 'Tampere University', code: 'TREPO' },
-  { uni: 'Oulu University', code: 'OULUREPO' }
+  { uni: 'Oulu University', code: 'OULUREPO' },
+  { uni: 'LUT University', code: 'LUTPUB'},
 ];
 
 export const validUniCodes = uniCodes.map((u) => u.code);
