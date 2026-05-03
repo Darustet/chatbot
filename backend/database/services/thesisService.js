@@ -82,7 +82,7 @@ function normalizeThesisPayload(payload = {}) {
 		hybrid_label: payload.hybrid_label ?? null,
 		hybrid_reasons: payload.hybrid_reasons ?? null,
 		openAI_decision: payload.openAI_decision ?? null,
-		evidence: payload.openAI_evidence ?? null,
+		openAI_evidence: payload.openAI_evidence ?? null,
 	};
 }
 

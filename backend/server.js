@@ -9,7 +9,7 @@ import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
 import { uniCodes, validUniCodes } from "./config/universities.js";
-import { createThesis } from './database/repositories/thesisRepository.js';
+import { createThesisEntry } from './database/services/thesisService.js';
 
 const app = express();
 
@@ -118,11 +118,11 @@ app.get("/uni/:uni", async (req, res) => {
             .join(" ")
             .toLowerCase();
 
-          const ThesisToInsertDb = await createThesis({
+          const ThesisToInsertDb = await createThesisEntry({
             title: thesis.title,
             author: thesis.author,
             year: thesis.year,
-            university: "Tampere University",
+            university: thesis.publisher || "Unknown University",
             university_code: thesis.universityCode || uniCode,
             handle: thesis.handle,
             link: thesis.link,
@@ -142,7 +142,8 @@ app.get("/uni/:uni", async (req, res) => {
             openAI_decision: String(thesis.isNokiaProject || "unknown").toLowerCase(),
             openAI_evidence: thesis.evidence || null
           });
-          console.log("Inserted thesis:", ThesisToInsertDb);
+
+          console.log("Successfully inserted thesis link:", ThesisToInsertDb.link);
         }
         return res.json(thesesWithScoreSorted);
     } catch (error) {
