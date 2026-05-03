@@ -1,4 +1,11 @@
-const filename = 'theses.sqlite';
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// theses.sqlite: backend/theses.sqlite
+const filename = path.join(__dirname, "../theses.sqlite");
 
 const labels = `CREATE TABLE IF NOT EXISTS labels (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
