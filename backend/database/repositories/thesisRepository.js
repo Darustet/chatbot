@@ -14,6 +14,12 @@ const getThesisById = (id) => {
   return result;
 };
 
+const getThesisByLink = (link) => {
+  return db
+    .prepare('SELECT * FROM theses WHERE link = ?')
+    .get(link) || null;
+};
+
 const createThesis = (thesis) => {
   const stmt = db
   .prepare(`
@@ -103,8 +109,9 @@ const deleteThesis = (id) => {
 
 export { 
   getAllTheses, 
-  getThesisById, 
+  getThesisById,
+  getThesisByLink,
   createThesis, 
   updateThesis, 
-  deleteThesis 
+  deleteThesis
 };

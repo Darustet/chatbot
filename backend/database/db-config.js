@@ -20,7 +20,7 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   university VARCHAR(250),
   university_code VARCHAR(250),
   handle VARCHAR(250),
-  link VARCHAR(500),
+  link VARCHAR(500) UNIQUE,
   thesisId VARCHAR(250),
   abstract_text TEXT,
   rule_label VARCHAR(64),
