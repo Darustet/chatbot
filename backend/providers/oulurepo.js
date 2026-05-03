@@ -2,7 +2,6 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
 import { fetchDetailPageAbstracts, runWithConcurrency, resolveThesisLink } from "./helpers.js";
-import { analyzeAbstract } from "./openAiDecision.js"
 
 const BASE_URL = "https://oulurepo.oulu.fi/";
 const OULUREPO_SCOPE = "10024/1102";
@@ -64,13 +63,7 @@ export const OuluRepoProvider = {
       }
 
       const abstractByLanguage = await fetchDetailPageAbstracts(handle,BASE_URL);
-      const abstract = Object.values(abstractByLanguage).join(" ").toLowerCase();
 
-      const thesisUrl = /^https?:\/\//i.test(handle)
-        ? handle
-        : new URL(handle, BASE_URL).href;
-
-      const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
       const link = resolveThesisLink(handle, uniCode);
 
       return normalizeThesis({
@@ -82,9 +75,7 @@ export const OuluRepoProvider = {
         year: year || "Unknown Date",
         publisher: "Oulu University",
         universityCode: uniCode,
-        abstractByLanguage,
-        isNokiaProject: getOpenAIDecision.decision.toUpperCase() ||"Unknown is done for Nokia",
-        evidence: getOpenAIDecision.evidence || "Unknown evidence"
+        abstractByLanguage
       });
     });
 

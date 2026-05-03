@@ -1,8 +1,8 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { fetchDetailPageAbstracts, runWithConcurrency, resolveThesisLink } from "./helpers.js";
-import { analyzeAbstract } from "./openAiDecision.js"
+import { fetchDetailPageAbstracts, runWithConcurrency } from "./helpers.js";
+import { analyzeAbstract } from "../openAiDecision.js";
 
 const BASE_URL = "https://www.theseus.fi/";
 // const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
@@ -87,27 +87,16 @@ export const TheseusProvider = {
 
       // Fetch detail page abstracts with concurrency limit
       const abstractByLanguage = await fetchDetailPageAbstracts(handle, BASE_URL);
-      const abstract = Object.values(abstractByLanguage).join(" ").toLowerCase();
-
-      const thesisUrl = /^https?:\/\//i.test(handle)
-        ? handle
-        : new URL(handle, BASE_URL).href;
-
-      const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
-      const link = resolveThesisLink(handle, uniCode);
 
       return normalizeThesis({
         handle,
-        link,
         thesisId: null,
         title: title || "No Title",
         author: author || "Unknown Author",
         year: year || "Unknown Date",
         publisher: publisher ? `${publisher}` : "Unknown UAS",
         universityCode: uniCode,
-        abstractByLanguage,
-        isNokiaProject: getOpenAIDecision.decision.toUpperCase() ||"Unknown is done for Nokia",
-        evidence: getOpenAIDecision.evidence || "Unknown evidence"
+        abstractByLanguage
       });
     });
 

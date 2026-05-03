@@ -2,7 +2,6 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
 import { fetchDetailPageAbstracts, runWithConcurrency, resolveThesisLink } from "./helpers.js";
-import { analyzeAbstract } from "./openAiDecision.js"
 
 const BASE_URL = "https://lutpub.lut.fi/";
 const LUT_BACHELOR_SCOPE = "10024/158300";
@@ -73,27 +72,16 @@ export const LutPubProvider = {
 
       //Extract abstract
       const abstractByLanguage = await fetchDetailPageAbstracts(handle,BASE_URL);
-      //const abstract = Object.values(abstractByLanguage).join(" ").toLowerCase();
-
-      const thesisUrl = /^https?:\/\//i.test(handle)
-        ? handle
-        : new URL(handle, BASE_URL).href;
-
-      const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
-      const link = resolveThesisLink(handle, uniCode);
 
       return normalizeThesis({
         handle,
-        link,
         thesisId: null,
         title,
         author: author || "Unknown Author",
         year: year || "Unknown Date",
         publisher: "LUT University",
-        universityCode: uniCode,
+        universityCode: "LUTPUB",
         abstractByLanguage,
-        isNokiaProject: getOpenAIDecision.decision.toUpperCase() ||"Unknown is done for Nokia",
-        evidence: getOpenAIDecision.evidence || "Unknown evidence"
       });
     });
   });
