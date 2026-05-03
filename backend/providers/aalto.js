@@ -1,6 +1,6 @@
 import { normalizeThesis } from "./types.js";
-import { toAbstractByLanguage } from "./helpers.js";
-import { analyzeAbstract } from "./openAiDecision.js";
+import { toAbstractByLanguage, resolveThesisLink } from "./helpers.js";
+//import { analyzeAbstract } from "./openAiDecision.js";
 
 // Link for Aalto doc api
 const AALTO_API_BASE = "https://aaltodoc.aalto.fi/server/api";
@@ -53,9 +53,11 @@ export const AaltoProvider = {
         : new URL(handle, BASE_URL).href;
 
         const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
+        const link = resolveThesisLink(handle, "AALTO");
 
         return normalizeThesis({
           handle,
+          link,
           thesisId,
           title,
           author,

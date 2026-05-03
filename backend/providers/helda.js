@@ -1,4 +1,4 @@
-import { toAbstractByLanguage } from "./helpers.js";
+import { toAbstractByLanguage, resolveThesisLink } from "./helpers.js";
 import { normalizeThesis } from "./types.js";
 import { analyzeAbstract } from "./openAiDecision.js";
 
@@ -52,11 +52,13 @@ export const HeldaProvider = {
           : new URL(handle, BASE_URL).href;
 
         const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
+        const link = resolveThesisLink(handle, "HELDA");
 
         return normalizeThesis({
           thesisId,
           title,
           handle,
+          link,
           author,
           year,
           publisher: publisher || "University of Helsinki",

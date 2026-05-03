@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { fetchDetailPageAbstracts, runWithConcurrency } from "./helpers.js";
+import { fetchDetailPageAbstracts, runWithConcurrency, resolveThesisLink } from "./helpers.js";
 import { analyzeAbstract } from "./openAiDecision.js"
 
 const BASE_URL = "https://oulurepo.oulu.fi/";
@@ -71,9 +71,11 @@ export const OuluRepoProvider = {
         : new URL(handle, BASE_URL).href;
 
       const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
+      const link = resolveThesisLink(handle, uniCode);
 
       return normalizeThesis({
         handle,
+        link,
         thesisId: null,
         title,
         author: author || "Unknown Author",

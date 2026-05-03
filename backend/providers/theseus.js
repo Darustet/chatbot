@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { fetchDetailPageAbstracts, runWithConcurrency } from "./helpers.js";
+import { fetchDetailPageAbstracts, runWithConcurrency, resolveThesisLink } from "./helpers.js";
 import { analyzeAbstract } from "./openAiDecision.js"
 
 const BASE_URL = "https://www.theseus.fi/";
@@ -94,9 +94,11 @@ export const TheseusProvider = {
         : new URL(handle, BASE_URL).href;
 
       const getOpenAIDecision = await analyzeAbstract(thesisUrl, abstract)
+      const link = resolveThesisLink(handle, uniCode);
 
       return normalizeThesis({
         handle,
+        link,
         thesisId: null,
         title: title || "No Title",
         author: author || "Unknown Author",
@@ -104,8 +106,8 @@ export const TheseusProvider = {
         publisher: publisher ? `${publisher}` : "Unknown UAS",
         universityCode: uniCode,
         abstractByLanguage,
-        //isNokiaProject: getOpenAIDecision.decision.toUpperCase() ||"Unknown is done for Nokia",
-        //evidence: getOpenAIDecision.evidence || "Unknown evidence"
+        isNokiaProject: getOpenAIDecision.decision.toUpperCase() ||"Unknown is done for Nokia",
+        evidence: getOpenAIDecision.evidence || "Unknown evidence"
       });
     });
 

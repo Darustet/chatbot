@@ -9,6 +9,7 @@ import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
 import { uniCodes, validUniCodes } from "./config/universities.js";
+import { createThesis } from './database/repositories/thesisRepository.js';
 
 const app = express();
 
@@ -106,8 +107,43 @@ app.get("/uni/:uni", async (req, res) => {
             };
         });
 
-        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b._nokiaScore - a._nokiaScore);
+        const thesesWithScoreSorted = thesesWithScores.sort(
+          (a, b) => b._nokiaScore - a._nokiaScore
+        );
 
+        for (const item of thesesWithScoreSorted) {
+          const thesis = item.thesis;
+
+          const abstract = Object.values(thesis.abstractByLanguage || {})
+            .join(" ")
+            .toLowerCase();
+
+          const ThesisToInsertDb = await createThesis({
+            title: thesis.title,
+            author: thesis.author,
+            year: thesis.year,
+            university: "Tampere University",
+            university_code: thesis.universityCode || uniCode,
+            handle: thesis.handle,
+            link: thesis.link,
+            thesisId: thesis.thesisId || null,
+            abstract_text: abstract,
+            final_label_id: null,
+
+            rule_label: item._nokiaRelevance,
+            rule_score: item._nokiaScore,
+            rule_reasons: item._nokiaReasons?.join("; ") || null,
+
+            ml_label: null,
+            ml_probability: null,
+            hybrid_label: null,
+            hybrid_reasons: null,
+
+            openAI_decision: String(thesis.isNokiaProject || "unknown").toLowerCase(),
+            openAI_evidence: thesis.evidence || null
+          });
+          console.log("Inserted thesis:", ThesisToInsertDb);
+        }
         return res.json(thesesWithScoreSorted);
     } catch (error) {
         console.error(`Error fetching or processing data for university ${uniCode}:`, error);
