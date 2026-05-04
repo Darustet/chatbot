@@ -83,6 +83,41 @@ const getThesesByUniversityCode = (uniCode, limit = null) => {
   }
 };
 
+/**
+ * Update only scoring-related fields for a thesis row
+ * @param {number} id - thesis row id
+ * @param {object} scores - object with scoring fields
+ */
+const updateThesisScores = (id, scores) => {
+  const stmt = db.prepare(
+    `UPDATE theses SET
+       rule_label = ?,
+       rule_score = ?,
+       rule_reasons = ?,
+       ml_label = ?,
+       ml_probability = ?,
+       hybrid_label = ?,
+       hybrid_reasons = ?,
+       final_label_id = ?
+     WHERE id = ?`
+  );
+  const result = stmt.run(
+    scores.rule_label ?? null,
+    scores.rule_score ?? null,
+    scores.rule_reasons ?? null,
+    scores.ml_label ?? null,
+    scores.ml_probability ?? null,
+    scores.hybrid_label ?? null,
+    scores.hybrid_reasons ?? null,
+    scores.final_label_id ?? null,
+    id
+  );
+  if (result.changes === 0) {
+    throw new Error('Failed to update thesis scores');
+  }
+  return getThesisById(id);
+};
+
 
 export { 
   getAllTheses, 
@@ -91,4 +126,5 @@ export {
   updateThesis, 
   deleteThesis,
   getThesesByUniversityCode,
+  updateThesisScores,
 };

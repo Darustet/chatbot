@@ -6,7 +6,7 @@ import axios from 'axios';
 import { getProvider } from '../providers/index.js';
 import { deduplicate, resolveThesisLink } from '../providers/helpers.js';
 import { calculateNokiaCollaborationScoreByRules } from '../utils/relevance.js';
-import { thesisEntryPost, thesesGet } from '../database/services/thesisService.js';
+import { thesisEntryPost, thesesGet, updateThesisScores } from '../database/services/thesisService.js';
 import { uniCodes, validUniCodes } from '../config/universities.js';
 
 const router = express.Router();
@@ -401,6 +401,71 @@ router.post('/collect-theses', async (req, res) => {
   } catch (error) {
     console.error('Error collecting theses:', error);
     return res.status(500).json({ error: 'Failed to collect theses' });
+  }
+});
+
+// POST /recalculate-scores
+// Recalculate rule and ML scores for existing theses in the DB.
+// Body: { scope: 'all' | 'university:CODE', skipMl: boolean }
+router.post('/recalculate-scores', async (req, res) => {
+  try {
+    const scope = String(req.body?.scope || 'all');
+    const skipMl = req.body?.skipMl === true;
+
+    const allRows = thesesGet() || [];
+
+    // Filter by scope if requested
+    let rowsToProcess = allRows;
+    if (scope.startsWith('university:')) {
+      const code = scope.split(':')[1];
+      rowsToProcess = allRows.filter(r => String(r.university_code) === String(code));
+    }
+
+    const updatedIds = [];
+
+    for (const row of rowsToProcess) {
+      try {
+        const abstractText = toStorageAbstract({ en: row.abstract_text });
+        const modelText = toModelText(row.title, abstractText);
+
+        const thesisObj = { ...row, abstractByLanguage: { en: abstractText } };
+        const scored = calculateNokiaCollaborationScoreByRules(thesisObj);
+
+        let mlProbability = null;
+        if (!skipMl) {
+          const mlResult = await classifyThesisWithMl(modelText);
+          mlProbability = typeof mlResult?.probability === 'number' ? mlResult.probability : null;
+        }
+
+        const mlLabel = toMlBandLabel(mlProbability);
+        const hybridLabel = decideHybridLabel(scored.ruleLabel, mlProbability);
+
+        const reasonParts = Array.isArray(scored.ruleReasons) ? [...scored.ruleReasons] : [];
+        if (typeof mlProbability === 'number') reasonParts.push(`ML probability: ${mlProbability.toFixed(3)}`);
+        reasonParts.push(`Hybrid label: ${hybridLabel}`);
+
+        const payload = {
+          rule_label: scored.ruleLabel,
+          rule_score: scored.ruleScore,
+          rule_reasons: scored.ruleReasons,
+          ml_label: mlLabel,
+          ml_probability: mlProbability,
+          hybrid_label: hybridLabel,
+          hybrid_reasons: reasonParts.join('; '),
+          labelName: hybridLabel
+        };
+
+        await updateThesisScores(row.id, payload);
+        updatedIds.push(row.id);
+      } catch (err) {
+        console.warn(`Failed to rescore thesis id=${row.id}:`, err?.message || err);
+      }
+    }
+
+    return res.json({ updated: updatedIds.length });
+  } catch (error) {
+    console.error('Error in /recalculate-scores:', error);
+    return res.status(500).json({ error: 'Failed to recalculate scores' });
   }
 });
 

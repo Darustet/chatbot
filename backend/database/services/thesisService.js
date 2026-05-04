@@ -5,6 +5,7 @@ import {
 	updateThesis,
 	deleteThesis,
 	getThesesByUniversityCode,
+	updateThesisScores as updateThesisScoresRepo,
 } from '../repositories/thesisRepository.js';
 import { getLabelIdByName, createLabel } from '../repositories/labelRepository.js';
 
@@ -97,6 +98,29 @@ const thesisEntryPost = (payload) => {
 const ThesisEntryUpdate = (id, payload) => {
 	const thesis = normalizeThesisPayload(payload);
 	return updateThesis(id, thesis);
+};
+
+/**
+ * Update scoring-related fields for an existing thesis row.
+ * This does not require a full thesis payload.
+ */
+const updateThesisScores = (id, payload) => {
+	const final_label_id = payload.final_label_id !== undefined && payload.final_label_id !== null
+		? payload.final_label_id
+		: resolveLabelId(payload);
+
+	const scores = {
+		rule_label: payload.rule_label ?? payload.ruleLabel ?? null,
+		rule_score: toIntOrNull(payload.rule_score ?? payload.ruleScore ?? null),
+		rule_reasons: toTextOrNull(payload.rule_reasons ?? payload.ruleReasons ?? null),
+		ml_label: payload.ml_label ?? payload.mlLabel ?? null,
+		ml_probability: toFloatOrNull(payload.ml_probability ?? payload.mlProbability ?? null),
+		hybrid_label: payload.hybrid_label ?? payload.hybridLabel ?? null,
+		hybrid_reasons: payload.hybrid_reasons ?? payload.hybridReasons ?? null,
+		final_label_id: final_label_id ?? null,
+	};
+
+	return updateThesisScoresRepo(id, scores);
 };
 
 const ThesisEntryDelete = (id) => deleteThesis(id);
@@ -195,4 +219,5 @@ export {
 	ThesisEntryDelete,
 	normalizeThesisPayload,
 	thesesByUniversityCodeGet,
+	updateThesisScores,
 };
