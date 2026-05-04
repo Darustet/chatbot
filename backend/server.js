@@ -1,14 +1,11 @@
 import axios from "axios";
 import express from "express";
 import 'dotenv/config';
-import db from "./database/db.js";
 import * as cheerio from "cheerio";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
-import { getProvider } from "./providers/index.js";
-import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
-import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
-import { uniCodes, validUniCodes } from "./config/universities.js";
+import thesesRoutes from "./routes/theses.js";
+import { validUniCodes } from "./config/universities.js";
 
 const app = express();
 
@@ -28,91 +25,6 @@ app.use(function(req, res, next) {
     }
     
     next();
-});
-
-app.get("/uni/:uni", async (req, res) => {
-    const uniCode = req.params.uni;
-    const query = String(req.query.query || "nokia");
-    // Results per page, capped at 200, default 30
-    const rpp = Math.min(parseInt(String(req.query.rpp || "30"), 10) || 30, 200);
-    console.log('Received query parameters:', { query, rpp, uniCode });
-    console.log('rpp: ', rpp);
-    // Minimum year filter, default 2023
-    const yearMin = parseInt(String(req.query.yearMin || "2023"), 10) || 2023;
-    // Maximum year filter, default current year
-    const yearMax = parseInt(String(req.query.yearMax || String(new Date().getFullYear())), 10) || new Date().getFullYear();
-
-    console.log(`Received request for university: ${uniCode} (query=${query}, rpp=${rpp}, yearMin=${yearMin}, yearMax=${yearMax})`);
-
-    // Build context for provider functions
-    const context = { uniCode, query, rpp, yearMin, yearMax, uniCodes };
-    const provider = getProvider(uniCode);
-    const isKnownUni = validUniCodes.includes(encodeURIComponent(uniCode));
-    if (!isKnownUni) {
-        return res.status(400).json({ error: `Unknown university code: ${uniCode}` });
-    }
-    let parsed = [];
-    try {
-        if (provider.buildUrls) {
-            const urls = provider.buildUrls(context);
-            console.log(`Fetching data from Bachelor URL: ${urls[0]}`);
-            console.log(`Fetching data from Master URL: ${urls[1]}`);
-            const responses = await Promise.all(urls.map( url => axios.get(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                timeout: 15000
-
-            })));
-            parsed = responses.flatMap(response => provider.parse(response));
-        } else {
-            const fetchUrl = provider.buildUrl(context);
-            console.log(`Fetching data from URL: ${fetchUrl}`);
-            const response = await axios.get(fetchUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                timeout: 15000
-            });
-            console.log("Response status:", response.status);
-            parsed = provider.parse(response);
-        }
-
-        const normalized = await Promise.resolve(provider.normalize(parsed, { ...context}));
-
-        const deduplicated = deduplicate(normalized);
-
-        const filtered = deduplicated.filter(t => {
-            const year = parseInt(t.thesis.year, 10);
-            return year >= yearMin && year <= yearMax;
-        });
-        if (filtered.length === 0) {
-            console.warn(`No thesis data found for university ${uniCode} after filtering by year`);
-            return res.status(404).json({ error: `No thesis data found for university ${uniCode} after filtering by year` });
-        }
-
-        console.log(`Sending ${filtered.length} theses to client for university ${uniCode}`);
-
-        const thesesWithScores = filtered.map((t) => {
-            const thesis = t.thesis || {};
-            const link = thesis.link || resolveThesisLink(thesis.handle, thesis.universityCode || uniCode);
-            const thesisWithLink = { ...thesis, link };
-            const scoreData = calculateNokiaCollaborationScoreByRules(thesisWithLink);
-            return {
-                thesis: thesisWithLink,
-                _nokiaScore: scoreData._nokiaScore,
-                _nokiaRelevance: scoreData._nokiaRelevance,
-                _nokiaReasons: scoreData._nokiaReasons
-            };
-        });
-
-        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b._nokiaScore - a._nokiaScore);
-
-        return res.json(thesesWithScoreSorted);
-    } catch (error) {
-        console.error(`Error fetching or processing data for university ${uniCode}:`, error);
-        return res.status(500).json({ error: `Failed to fetch or process data for university ${uniCode}` });
-    }
 });
 
 app.get("/single-thesis/:handle", async (req, res) => {
@@ -153,6 +65,7 @@ app.get("/single-thesis/:handle", async (req, res) => {
 // Add routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/theses", thesesRoutes);
 
 // Health check endpoint for the main server
 app.get('/health', (req, res) => {
@@ -172,5 +85,6 @@ app.listen(3000, () => {
     console.log("🚀 Server is running on port 3000");
     console.log("📊 Admin panel available at /api/admin");
     console.log("🤖 Chatbot API available at /api/chatbot");
+    console.log("📚 Theses API (DB) available at /theses/uni/:uni");
     console.log("🏥 Health check available at /health");
 });

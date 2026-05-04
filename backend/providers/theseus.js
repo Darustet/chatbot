@@ -3,19 +3,15 @@ import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
 import {
   fetchDetailPageAbstracts,
-  runWithConcurrency
+  runWithConcurrency,
+  normalizeUniCode
 } from "./helpers.js";
 
 const BASE_URL = "https://www.theseus.fi/";
 // const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
 
-const toTheseusScope = (uniCode) => {
-  try {
-    return encodeURIComponent(decodeURIComponent(String(uniCode || "")));
-  } catch {
-    return encodeURIComponent(String(uniCode || ""));
-  }
-};
+// Alias for clarity in Theseus context
+const toTheseusScope = (uniCode) => normalizeUniCode(uniCode);
 
 export const TheseusProvider = {
   // Build the API URL based on the query and filters

@@ -1,4 +1,5 @@
 import db from '../db.js';
+import { normalizeUniCode } from '../../providers/helpers.js';
 
 const getAllTheses = () => {
   return db.prepare('SELECT * FROM theses').all();
@@ -46,10 +47,48 @@ const deleteThesis = (id) => {
   return { id, deleted: true };
 };
 
+/**
+ * Get theses by university code with optional limit
+ * @param {string} uniCode - University code
+ * @param {number} limit - Maximum results to return
+ * @returns {Array} Array of thesis records
+ */
+const getThesesByUniversityCode = (uniCode, limit = null) => {
+  try {
+    // Normalize university code to encoded format to match database
+    // Database stores codes as encoded (e.g., 10024%2F6)
+    // Route receives decoded from URL (e.g., 10024/6)
+    const normalizedUniCode = normalizeUniCode(uniCode);
+    const baseQuery = `
+      SELECT t.*, l.name AS final_label
+      FROM theses t
+      LEFT JOIN labels l ON t.final_label_id = l.id
+      WHERE t.university_code = ?
+      ORDER BY t.rule_score DESC, t.year DESC
+    `;
+    const query = Number(limit) > 0
+      ? `${baseQuery} LIMIT ?`
+      : baseQuery;
+    const stmt = db.prepare(query);
+    const rows = Number(limit) > 0
+      ? stmt.all(normalizedUniCode, Number(limit))
+      : stmt.all(normalizedUniCode);
+    if (rows.length === 0) {
+      return null;
+    }
+    return rows;
+  } catch (error) {
+    console.error('Database error in getThesesByUniversityCode:', error.message);
+    throw error;
+  }
+};
+
+
 export { 
   getAllTheses, 
   getThesisById, 
   createThesis, 
   updateThesis, 
-  deleteThesis 
+  deleteThesis,
+  getThesesByUniversityCode,
 };

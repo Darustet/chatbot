@@ -6,7 +6,7 @@ import axios from 'axios';
 import { getProvider } from '../providers/index.js';
 import { deduplicate, resolveThesisLink } from '../providers/helpers.js';
 import { calculateNokiaCollaborationScoreByRules } from '../utils/relevance.js';
-import { createThesisEntry, listTheses } from '../database/services/thesisService.js';
+import { thesisEntryPost, thesesGet } from '../database/services/thesisService.js';
 import { uniCodes, validUniCodes } from '../config/universities.js';
 
 const router = express.Router();
@@ -155,9 +155,9 @@ async function fetchScoredThesesByUniversity(context) {
     const scored = calculateNokiaCollaborationScoreByRules(thesisWithLink);
     return {
       thesis: thesisWithLink,
-      _nokiaScore: scored._nokiaScore,
-      _nokiaRelevance: scored._nokiaRelevance,
-      _nokiaReasons: scored._nokiaReasons,
+      ruleScore: scored.ruleScore,
+      ruleLabel: scored.ruleLabel,
+      ruleReasons: scored.ruleReasons,
     };
   });
   return thesesWithScores;
@@ -251,6 +251,18 @@ router.put('/dashboard', async (req, res) => {
   }
 });
 
+/**
+ * POST /collect-theses
+ * 
+ * Collect theses for a university (or all universities) with optional search query and year filters, apply rule-based and ML scoring, and save to database.
+ * 
+ * Request body parameters:
+ * - uniCode: University code to collect theses for, or 'all' for all universities (required)
+ * - query: Search term to filter theses (default: 'nokia'), as we want to search for Nokia collaborations. 
+ * - rpp: Results per page to fetch from provider, capped at 200 (default: 30)
+ * - yearMin: Minimum year filter for theses (default: 2023)
+ * - yearMax: Maximum year filter for theses (default: current year)
+ */
 router.post('/collect-theses', async (req, res) => {
   try {
     const uniCode = String(req.body?.uniCode || 'all');
@@ -274,7 +286,7 @@ router.post('/collect-theses', async (req, res) => {
       targetCodes = [uniCode];
     }
 
-    const existingRows = listTheses();
+    const existingRows = thesesGet();
     console.log(`Existing theses in database: ${existingRows.length}`);
     const existingKeys = new Set(
       existingRows.map((row) =>
@@ -318,11 +330,11 @@ router.post('/collect-theses', async (req, res) => {
           const mlResult = await classifyThesisWithMl(modelText);
           const mlProbability = typeof mlResult?.probability === 'number' ? mlResult.probability : null;
           const mlLabel = toMlBandLabel(mlProbability);
-          const ruleLabel = toStoredLabel(item._nokiaRelevance);
-          const hybridLabel = decideHybridLabel(item._nokiaRelevance, mlProbability);
+          const ruleLabel = toStoredLabel(item.ruleLabel);
+          const hybridLabel = decideHybridLabel(item.ruleLabel, mlProbability);
           const finalLabelUsed = hybridLabel;
 
-          const reasonParts = Array.isArray(item._nokiaReasons) ? [...item._nokiaReasons] : [];
+          const reasonParts = Array.isArray(item.ruleReasons) ? [...item.ruleReasons] : [];
           if (typeof mlProbability === 'number') {
             reasonParts.push(`ML probability: ${mlProbability.toFixed(3)}`);
           }
@@ -342,8 +354,8 @@ router.post('/collect-theses', async (req, res) => {
             labelName: finalLabelUsed, // final_label_id is resolved in thesisService from labelName.
             nokia_reasons: reasonParts,
             rule_label: ruleLabel,
-            rule_score: item._nokiaScore ?? null,
-            rule_reasons: item._nokiaReasons ?? null,
+            rule_score: item.ruleScore ?? null,
+            rule_reasons: item.ruleReasons ?? null,
             ml_label: mlLabel,
             ml_probability: mlProbability,
             hybrid_label: hybridLabel,
@@ -365,11 +377,12 @@ router.post('/collect-theses', async (req, res) => {
           }
 
           try {
-            createThesisEntry(payload);
+            const savedThesis = thesisEntryPost(payload);
             existingKeys.add(thesisKey);
             runKeys.add(thesisKey);
             uniSummary.saved += 1;
             processSummary.saved += 1;
+
           } catch (error) {
             console.error(`Failed to save thesis for ${code}:`, error?.message || error);
             uniSummary.failed += 1;

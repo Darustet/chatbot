@@ -3,7 +3,8 @@ import {
 	getThesisById,
 	createThesis,
 	updateThesis,
-	deleteThesis
+	deleteThesis,
+	getThesesByUniversityCode,
 } from '../repositories/thesisRepository.js';
 import { getLabelIdByName, createLabel } from '../repositories/labelRepository.js';
 
@@ -84,27 +85,114 @@ function normalizeThesisPayload(payload = {}) {
 	};
 }
 
-const listTheses = () => getAllTheses();
+const thesesGet = () => getAllTheses();
 
-const findThesisById = (id) => getThesisById(id);
+const thesisByIdGet = (id) => getThesisById(id);
 
-const createThesisEntry = (payload) => {
+const thesisEntryPost = (payload) => {
 	const thesis = normalizeThesisPayload(payload);
 	return createThesis(thesis);
 };
 
-const updateThesisEntry = (id, payload) => {
+const ThesisEntryUpdate = (id, payload) => {
 	const thesis = normalizeThesisPayload(payload);
 	return updateThesis(id, thesis);
 };
 
-const deleteThesisEntry = (id) => deleteThesis(id);
+const ThesisEntryDelete = (id) => deleteThesis(id);
+
+function toReasonArray(value) {
+	if (Array.isArray(value)) {
+		return value.map((item) => String(item));
+	}
+
+	if (typeof value !== 'string' || value.trim() === '') {
+		return [];
+	}
+
+	try {
+		const parsed = JSON.parse(value);
+		if (Array.isArray(parsed)) {
+			return parsed.map((item) => String(item));
+		}
+	} catch {
+		// Stored reasons can be plain text; keep fallback parsing below.
+	}
+
+	if (value.includes(';')) {
+		return value
+			.split(';')
+			.map((part) => part.trim())
+			.filter(Boolean);
+	}
+
+	return [value];
+}
+
+function mapDbThesisRowToApiItem(row) {
+	const finalLabel = row.final_label || row.hybrid_label || row.rule_label || null;
+	const ruleScore = Number(row.rule_score) ?? null;
+
+	return {
+		thesis: {
+			handle: row.handle,
+			link: row.link,
+			thesisId: row.thesisId,
+			title: row.title,
+			author: row.author,
+			year: row.year == null ? null : String(row.year),
+			publisher: row.publisher,
+			universityCode: row.university_code,
+			abstractByLanguage: {
+				en: row.abstract_text || ''
+			}
+		},
+		ruleScore: ruleScore,
+		ruleLabel: row.rule_label || null,
+		ruleReasons: toReasonArray(row.rule_reasons),
+		mlProbability: typeof row.ml_probability === 'number' ? row.ml_probability : null,
+		finalLabel: finalLabel,
+		_isCollaboration: finalLabel === 'NOKIA_COLLABORATION' ? 'yes' : 'no'
+	};
+}
+
+/**
+ * Get all theses for a university by university code, mapped to frontend contract with stored labels
+ * 
+ * @param {string} uniCode - University code
+ * @returns {Array} Theses mapped to frontend contract with stored labels
+ */
+const thesesByUniversityCodeGet = (uniCode, rpp = null) => {
+	try {
+		const theses = getThesesByUniversityCode(uniCode, rpp);
+		console.log(`[thesesByUniversityCodeGet] Retrieved ${theses ? theses.length : 0} theses for university code: ${uniCode} with limit: ${rpp}`);
+		if (theses) {
+			const thesesWithScores = theses.map(mapDbThesisRowToApiItem);
+			// return sorted by rule score descending
+			const sortedTheses = thesesWithScores.sort(
+				(a, b) => {
+					if (a.ruleScore == null && b.ruleScore == null) return 0;
+					if (a.ruleScore == null) return 1;
+					if (b.ruleScore == null) return -1;
+					return b.ruleScore - a.ruleScore;
+				}
+			);
+			return sortedTheses;
+		}
+		throw new Error("No theses found");
+	} catch (error) {
+		console.error('Error in thesesByUniversityCodeGet:', error.message);
+		throw error;
+	}
+};
+
 
 export {
-	listTheses,
-	findThesisById,
-	createThesisEntry,
-	updateThesisEntry,
-	deleteThesisEntry,
-	normalizeThesisPayload
+	thesesGet,
+	thesisByIdGet,
+	thesisEntryPost,
+	ThesisEntryUpdate,
+	ThesisEntryDelete,
+	normalizeThesisPayload,
+	thesesByUniversityCodeGet,
 };

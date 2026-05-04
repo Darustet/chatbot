@@ -184,9 +184,9 @@ export const calculateNokiaCollaborationScoreByRules = (thesis, lang = "en") => 
   // early Nokia filter
   if (!containsNokia(combinedText)) {
     return {
-      _nokiaScore: 0,
-      _nokiaRelevance: "NO_INDICATION_OF_COLLABORATION",
-      _nokiaReasons: ["No Nokia mention"]
+      ruleScore: 0,
+      ruleLabel: "NO_INDICATION_OF_COLLABORATION",
+      ruleReasons: ["No Nokia mention"]
     };
   }
 
@@ -267,9 +267,9 @@ export const calculateNokiaCollaborationScoreByRules = (thesis, lang = "en") => 
     reasons.push("Vendor comparison context");
   }
   return {
-    _nokiaScore: nokiaScore,
-    _nokiaRelevance: toLabel(nokiaScore),
-    _nokiaReasons: reasons
+    ruleScore: nokiaScore,
+    ruleLabel: toLabel(nokiaScore),
+    ruleReasons: reasons
   };
 };
 

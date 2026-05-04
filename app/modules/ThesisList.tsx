@@ -73,6 +73,10 @@ export default function ThesisList() {
     return `/handle/${handle.replace(/^#/, '')}`;
   };
 
+  useEffect(() => {
+    console.log("fetched theses data: ", theses);
+  }, [theses]);
+
   // Fetches thesis list, runs when user clicks search button
   useEffect(() => {
     const fetchTheses = async () => {
@@ -107,20 +111,10 @@ export default function ThesisList() {
           // Fetch from each university with increased results per page
           const allPromises = majorUniCodes.map(async (uniCode) => {
             try {
-              const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=${RPP}`);
+              const uniResponse = await fetch(`${API_BASE_URL}/theses/uni/${uniCode}?rpp=${RPP}`);
               if (uniResponse.ok) {
                 const uniData = await uniResponse.json();
-
-                // Add university information to theses that are missing it
-                const uniInfo = uniCodes.find(u => u.code === uniCode);
-                //
-                const enhancedUniData = uniData.map((thesis: any) => ({
-                  ...thesis,
-                  universityCodeStr: uniCode,
-                  _universityName: uniInfo ? uniInfo.uni : null  // Store original university name
-                }));
-                console.log("enhancedUniData", enhancedUniData);
-                return enhancedUniData;
+                return uniData;
               }
               return [];
             } catch (error) {
@@ -138,7 +132,7 @@ export default function ThesisList() {
           console.log(`Combined ${fetchedData.length} Nokia-related thesis items from multiple universities`);
         } else {
           // For a specific university, proceed with the existing endpoint but with increased results
-          const endpoint = `${API_BASE_URL}/uni/${searchedUni}?query=nokia&rpp=${RPP}`;
+          const endpoint = `${API_BASE_URL}/theses/uni/${searchedUni}?rpp=${RPP}`;
 
           console.log(`Using endpoint: ${endpoint}`);
           const response = await fetch(endpoint);
@@ -153,15 +147,6 @@ export default function ThesisList() {
 
           fetchedData = await response.json();
           console.log('fetched data: ', fetchedData);
-
-          // Add university information
-          const uniInfo = uniCodes.find(u => u.code === searchedUni);
-          if (uniInfo) {
-            fetchedData = fetchedData.map((thesis: any) => ({
-              ...thesis,
-              _universityName: uniInfo.uni  // Store original university name
-            }));
-          }
 
           console.log(`Received ${fetchedData.length} Nokia-related thesis items from theseus.fi`);
         }
@@ -198,7 +183,7 @@ export default function ThesisList() {
         const university = item.thesis?.publisher ?? "";
         const author = item.thesis?.author ?? "";
         const date = item.thesis?.year || item.thesis?.date || "";
-        const nokiaScore = item._nokiaScore ?? item.thesis?._nokiaScore ?? 0;
+        const nokiaScore = item.ruleScore ?? item.thesis?.ruleScore ?? 0;
         const handle = item?.thesis?.handle ?? item?.handle ?? "";
         const universityCode = item.thesis?.universityCode ?? "";
 
@@ -230,7 +215,7 @@ export default function ThesisList() {
   }, [theses]);
 
   const getItemRelevance = (item: any) => {
-    const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
+    const rawNokiaRelevance = item?.thesis?.ruleLabel ?? item?.ruleLabel;
     const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION_OF_COLLABORATION"];
     const hasKnownRelevance =
       typeof rawNokiaRelevance === "string" && validNokiaLabels.includes(rawNokiaRelevance);
@@ -238,7 +223,7 @@ export default function ThesisList() {
   };
 
   const getItemScore = (item: any) => {
-    const rawScore = item?.thesis?._nokiaScore ?? item?._nokiaScore;
+    const rawScore = item?.thesis?.ruleScore ?? item?.ruleScore;
     if (rawScore === null || rawScore === undefined) {
       return -1;
     }
@@ -409,7 +394,7 @@ export default function ThesisList() {
               // console.log(`University for "${title}": ${publisher} (Source: ${universitySource})`);
 
               // Guard legacy/unscored items that do not include Nokia scoring fields yet.
-              const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
+              const rawNokiaRelevance = item?.thesis?.ruleLabel ?? item?.ruleLabel;
               const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION_OF_COLLABORATION"];
               const hasKnownRelevance =
                 typeof rawNokiaRelevance === "string" && validNokiaLabels.includes(rawNokiaRelevance);

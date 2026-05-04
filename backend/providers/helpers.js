@@ -10,6 +10,27 @@ const THESIS_BASE_URL_BY_UNI = {
 
 const THESEUS_BASE_URL = "https://www.theseus.fi";
 
+/**
+ * Normalize university code to encoded format.
+ * Handles both already-encoded and decoded inputs by decoding first, then encoding.
+ * This ensures idempotent behavior: normalizeUniCode(code) === normalizeUniCode(normalizeUniCode(code))
+ * 
+ * Examples:
+ * - normalizeUniCode('10024/6') → '10024%2F6'
+ * - normalizeUniCode('10024%2F6') → '10024%2F6'
+ * - normalizeUniCode('AALTO') → 'AALTO'
+ * 
+ * @param {string} uniCode - University code (encoded or decoded)
+ * @returns {string} Encoded university code
+ */
+export const normalizeUniCode = (uniCode) => {
+  try {
+    return encodeURIComponent(decodeURIComponent(String(uniCode || "")));
+  } catch {
+    return encodeURIComponent(String(uniCode || ""));
+  }
+};
+
 // Provider-level shared helper utilities.
 export const toAbstractByLanguage = (abstracts) => {
   if (!Array.isArray(abstracts)) return {};
