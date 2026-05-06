@@ -4,7 +4,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
-DB_PATH = BASE_DIR / "database" / "theses.sqlite"
+DB_PATH = BASE_DIR / "theses.sqlite"
 OUTPUT_CSV = BASE_DIR / "data" / "exports" / "tfidf_training_set.csv"
 
 # exclude AMBIGUOUS from training
