@@ -75,6 +75,7 @@ export default function ThesisList() {
 
   // Fetches thesis list, runs when user clicks search button
   useEffect(() => {
+    if (!searchedUni) return;
     const fetchTheses = async () => {
       setError(null);
       setLoading(true);
@@ -88,24 +89,9 @@ export default function ThesisList() {
           // When "All" is selected, fetch from multiple major universities
           setLoading(true);
 
-          // Select a few major universities to get a diverse set of theses
-          const majorUniCodes = [
-            "10024%2F6",       // Metropolia
-            "10024%2F431",     // Haaga-Helia
-            // "10024%2F2124", // Oulu
-            // "10024%2F13",   // Tampere
-            // "10024%2F15",   // Turku
-            // "10024%2F14",   // Satakunnan
-            "10024%2F12",      // Laurea
-            "AALTO",           // Aalto University
-            "TREPO",           // Tampere University
-            "HELDA",           // University of Helsinki
-            "OULUREPO",        // Oulu University
-            "LUTPUB",          // LUT University
-          ];
-
+          const uniCodeList = uniCodes.map(({ uniCode }) => uniCode);
           // Fetch from each university with increased results per page
-          const allPromises = majorUniCodes.map(async (uniCode) => {
+          const allPromises = uniCodeList.map(async (uniCode) => {
             try {
               const uniResponse = await fetch(`${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=${RPP}`);
               if (uniResponse.ok) {
@@ -166,11 +152,6 @@ export default function ThesisList() {
           console.log(`Received ${fetchedData.length} Nokia-related thesis items from theseus.fi`);
         }
 
-        // Verify we got data
-        if (fetchedData.length === 0) {
-          throw new Error("No Nokia-related thesis data received from theseus.fi");
-        }
-
         // Update state with enhanced data
         setTheses(fetchedData);
       } catch (error: unknown) {
@@ -202,13 +183,6 @@ export default function ThesisList() {
         const handle = item?.thesis?.handle ?? item?.handle ?? "";
         const universityCode = item.thesis?.universityCode ?? "";
 
-        //const abstracts = item?.thesis?.abstractByLanguage || item?.abstractByLanguage;
-        //const abstract =
-          //abstracts?.en ||
-          //abstracts?.fi ||
-          //Object.values(abstracts || {})[0] ||
-          //"No abstract available";
-
         const openAI_decision = item.openAI_decision ?? item.thesis?.openAI_decision ?? "unknown";
 
         const openAI_evidence = item.openAI_evidence ?? item.thesis?.openAI_evidence ?? "";
@@ -236,7 +210,6 @@ export default function ThesisList() {
           date,
           link,
           nokiaScore,
-          //abstract,
           openAI_decision,
           openAI_evidence
         };
@@ -342,7 +315,12 @@ export default function ThesisList() {
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.searchButton}
-            onPress={() => setSearchedUni(selectedItem[1])}
+            onPress={() => {
+              if (selectedItem) {
+                setSearchedUni(selectedItem[1])
+              }
+
+            }}
           >
             <Text style={styles.searchButtonText}>Search</Text>
           </TouchableOpacity>
@@ -367,12 +345,13 @@ export default function ThesisList() {
           <ActivityIndicator size="large" color="#0000ff" style={styles.loadingIndicator} />
           <Text style={styles.loadingText}>Loading theses...</Text>
         </View>
-      ) : filteredTheses.length === 0 ? (
+      ) /*: filteredTheses.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No Nokia-related theses found matching your criteria.</Text>
           <Text style={styles.emptySubText}>Try adjusting your search filters or selecting a different university.</Text>
         </View>
-      ) : (
+      )
+        */
+        : (
         <>
           <Text style={styles.emptySubText}>Found {filteredTheses.length} theses</Text>
           <FlatList
@@ -388,13 +367,6 @@ export default function ThesisList() {
               const year = String(item?.thesis?.year || item?.year || item?.thesis?.date || item?.date || "Unknown Date");
               const universityCode = String(item?.thesis?.universityCode || item?.universityCode || "unknown university code");
               const thesisId = String(item?.thesis?.thesisId || item?.thesisId || `unknown-id`);
-
-              //const abstracts = item?.thesis?.abstractByLanguage || item?.abstractByLanguage;
-              //const abstract =
-                //abstracts?.en ||
-                //abstracts?.fi ||
-                //Object.values(abstracts || {})[0] ||
-                //"No abstract available";
 
               const openAI_decision = String(item?.thesis?.openAI_decision || item?.openAI_decision || 'unknown');
               const openAI_evidence = String(item?.thesis?.openAI_evidence || item?.openAI_evidence || 'unknown');
@@ -428,9 +400,6 @@ export default function ThesisList() {
                 publisher = "Finnish University";
                 universitySource = "default fallback";
               }
-
-              // Debug log showing where we got the university name from
-              // console.log(`University for "${title}": ${publisher} (Source: ${universitySource})`);
 
               // Guard legacy/unscored items that do not include Nokia scoring fields yet.
               const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
