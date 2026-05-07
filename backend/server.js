@@ -131,7 +131,7 @@ app.get("/uni/:uni", async (req, res) => {
         continue;
       }
 
-      const getOpenAIDecision = await analyzeAbstract(thesis.link, abstract);
+      const getOpenAIDecision = await analyzeAbstract(thesis.link, thesis.title, abstract);
 
       item.openAI_decision = getOpenAIDecision.decision || "unknown";
       item.openAI_evidence = getOpenAIDecision.evidence || "unknown";

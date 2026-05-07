@@ -108,7 +108,7 @@ Return "no" when:
   }
 }
 
-export async function analyzeAbstract(thesisUrl= "", abstractText = "") {
+export async function analyzeAbstract(thesisUrl= "", title = "", abstractText = "") {
 // If thesisUrl is found in the database, then retrieve isNokiaProject and evidence from the database;
 //otherwise, use the given abstractText for analysis with OpenAI.
 
