@@ -17,8 +17,8 @@ const getThesisById = (id) => {
 
 const createThesis = (thesis) => {
   const stmt = db
-    .prepare('INSERT INTO theses (title, author, year, university, university_code, handle, link, thesisId, abstract_text, publisher, final_label_id, rule_label, rule_score, rule_reasons, ml_label, ml_probability, hybrid_label, hybrid_reasons) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(thesis.title, thesis.author, thesis.year, thesis.university, thesis.university_code, thesis.handle, thesis.link, thesis.thesisId, thesis.abstract_text, thesis.publisher, thesis.final_label_id, thesis.rule_label, thesis.rule_score, thesis.rule_reasons, thesis.ml_label, thesis.ml_probability, thesis.hybrid_label, thesis.hybrid_reasons);
+    .prepare('INSERT INTO theses (title, author, year, university, university_code, handle, link, thesisId, abstract_text, extracted_text, publisher, final_label_id, rule_label, rule_score, rule_reasons, ml_label, ml_probability, hybrid_label, hybrid_reasons) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(thesis.title, thesis.author, thesis.year, thesis.university, thesis.university_code, thesis.handle, thesis.link, thesis.thesisId, thesis.abstract_text, thesis.extracted_text, thesis.publisher, thesis.final_label_id, thesis.rule_label, thesis.rule_score, thesis.rule_reasons, thesis.ml_label, thesis.ml_probability, thesis.hybrid_label, thesis.hybrid_reasons);
   if (!stmt.lastInsertRowid) {
     throw new Error('Failed to insert thesis');
   }
@@ -28,9 +28,9 @@ const createThesis = (thesis) => {
 const updateThesis = (id, thesis) => {
   const stmt = db
     .prepare(
-      'UPDATE theses SET title = ?, author = ?, year = ?, university = ?, university_code = ?, handle = ?, link = ?, thesisId = ?, abstract_text = ?, publisher = ?, final_label_id = ?, rule_label = ?, rule_score = ?, rule_reasons = ?, ml_label = ?, ml_probability = ?, hybrid_label = ?, hybrid_reasons = ? WHERE id = ?'
+      'UPDATE theses SET title = ?, author = ?, year = ?, university = ?, university_code = ?, handle = ?, link = ?, thesisId = ?, abstract_text = ?, extracted_text = ?, publisher = ?, final_label_id = ?, rule_label = ?, rule_score = ?, rule_reasons = ?, ml_label = ?, ml_probability = ?, hybrid_label = ?, hybrid_reasons = ? WHERE id = ?'
     )
-    .run(thesis.title, thesis.author, thesis.year, thesis.university, thesis.university_code, thesis.handle, thesis.link, thesis.thesisId, thesis.abstract_text, thesis.publisher, thesis.final_label_id, thesis.rule_label, thesis.rule_score, thesis.rule_reasons, thesis.ml_label, thesis.ml_probability, thesis.hybrid_label, thesis.hybrid_reasons, id);
+    .run(thesis.title, thesis.author, thesis.year, thesis.university, thesis.university_code, thesis.handle, thesis.link, thesis.thesisId, thesis.abstract_text, thesis.extracted_text, thesis.publisher, thesis.final_label_id, thesis.rule_label, thesis.rule_score, thesis.rule_reasons, thesis.ml_label, thesis.ml_probability, thesis.hybrid_label, thesis.hybrid_reasons, id);
   if (stmt.changes === 0) {
     throw new Error('Failed to update thesis');
   }

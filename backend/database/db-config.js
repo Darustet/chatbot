@@ -16,6 +16,7 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   link VARCHAR(500),
   thesisId VARCHAR(250),
   abstract_text TEXT,
+  extracted_text TEXT,
   publisher VARCHAR(250),
   rule_label VARCHAR(64),
   rule_score INTEGER,
@@ -29,22 +30,32 @@ const theses = `CREATE TABLE IF NOT EXISTS theses (
   FOREIGN KEY (final_label_id) REFERENCES labels(id)
 )`;
 
-const thesisExportView = `CREATE VIEW IF NOT EXISTS theses_export_view AS
+// View to see the rule-based and ML-based decisions alongside
+// If a rule score is larger than 8, it's collaboration,
+// if a ml probability is larger than 0.5, it's collaboration
+const thesisExportView = `
+DROP VIEW IF EXISTS theses_export_view;
+CREATE VIEW theses_export_view AS
 SELECT
-  t.id,
-  t.university,
-  t.author,
-  t.year,
-  t.title,
-  t.link,
-  t.rule_score,
-  t.ml_probability,
-  l.name AS final_label,
-  t.rule_reasons,
-  t.abstract_text
-FROM theses t
-LEFT JOIN labels l
-  ON l.id = t.final_label_id`;
+  id,
+  university,
+  abstract_text,
+  title,
+  author,
+  year,
+  link,
+  rule_reasons,
+  rule_score,
+  ml_probability,
+  CASE
+    WHEN rule_score >= 8 THEN 'YES'
+    ELSE '--'
+  END AS rule_decision,
+  CASE
+    WHEN ml_probability > 0.5 THEN 'YES'
+    ELSE '--'
+  END AS ml_decision
+FROM theses`;
 
 const checkTheses = `SELECT COUNT(*) AS count FROM theses`;
 

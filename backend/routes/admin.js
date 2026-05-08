@@ -53,11 +53,12 @@ const makeThesisKey = ({ handle, title, year, universityCode }) => {
   return `${handlePart}|${titlePart}|${yearPart}|${uniPart}`.toLowerCase();
 };
 
-// title and abstract combined for ML model input
-const toModelText = (title, abstractText) => {
+// title, abstract, and optional extracted text combined for ML model input
+const toModelText = (title, abstractText, extractedText) => {
   const safeTitle = title ? String(title) : '';
   const safeAbstract = abstractText ? String(abstractText) : '';
-  return `${safeTitle} ${safeAbstract}`.trim();
+  const safeExtractedText = extractedText ? String(extractedText) : '';
+  return `${safeTitle} ${safeAbstract} ${safeExtractedText}`.trim();
 };
 
 // Call ML service to classify thesis text, return null if any error occurs or if text is empty
@@ -326,7 +327,7 @@ router.post('/collect-theses', async (req, res) => {
         for (const item of thesesWithScores) {
           const thesis = item.thesis || {};
           const abstractText = toStorageAbstract(thesis.abstractByLanguage);
-          const modelText = toModelText(thesis.title, abstractText);
+          const modelText = toModelText(thesis.title, abstractText, thesis.extractedText);
           const mlResult = await classifyThesisWithMl(modelText);
           const mlProbability = typeof mlResult?.probability === 'number' ? mlResult.probability : null;
           const mlLabel = toMlBandLabel(mlProbability);
@@ -350,6 +351,7 @@ router.post('/collect-theses', async (req, res) => {
             link: thesis.link || null,
             thesisId: thesis.thesisId || null,
             abstractText,
+            extractedText: thesis.extractedText || null,
             publisher: thesis.publisher || null,
             labelName: finalLabelUsed, // final_label_id is resolved in thesisService from labelName.
             nokia_reasons: reasonParts,
@@ -426,7 +428,7 @@ router.post('/recalculate-scores', async (req, res) => {
     for (const row of rowsToProcess) {
       try {
         const abstractText = toStorageAbstract({ en: row.abstract_text });
-        const modelText = toModelText(row.title, abstractText);
+        const modelText = toModelText(row.title, abstractText, row.extracted_text);
 
         const thesisObj = { ...row, abstractByLanguage: { en: abstractText } };
         const scored = calculateNokiaCollaborationScoreByRules(thesisObj);

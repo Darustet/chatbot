@@ -179,7 +179,8 @@ export const calculateNokiaCollaborationScoreByRules = (thesis, lang = "en") => 
 
   const title = normalize(thesis.title);
   const abstract = pickByLanguage(thesis.abstractByLanguage, lang);
-  const combinedText = [title, abstract].filter(Boolean).join(" ");
+  const extractedText = normalize(thesis.extractedText);
+  const combinedText = [title, abstract, extractedText].filter(Boolean).join(" ");
 
   // early Nokia filter
   if (!containsNokia(combinedText)) {

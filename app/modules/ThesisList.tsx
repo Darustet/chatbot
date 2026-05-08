@@ -465,7 +465,7 @@ export default function ThesisList() {
 
 export const countMetropoliaNokiaTheses = async () => {
   try {
-    const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=100");
+    const response = await fetch("http://localhost:3000/theses/uni/10024%2F6?query=nokia&rpp=100");
     if (!response.ok) {
       throw new Error(`Failed to fetch theses: ${response.status}`);
     }
@@ -511,7 +511,7 @@ export const countMetropoliaNokiaTheses = async () => {
 
 export const countMetropoliaRelevantTheses = async () => {
   try {
-    const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=20");
+    const response = await fetch("http://localhost:3000/theses/uni/10024%2F6?query=nokia&rpp=20");
     if (!response.ok) {
       throw new Error(`Failed to fetch theses: ${response.status}`);
     }

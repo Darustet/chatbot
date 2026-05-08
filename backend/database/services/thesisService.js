@@ -74,6 +74,7 @@ function normalizeThesisPayload(payload = {}) {
 		link: payload.link ?? null,
 		thesisId: payload.thesisId ?? payload.thesis_id ?? null,
 		abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
+		extracted_text: payload.extracted_text ?? payload.extractedText ?? null,
 		publisher: payload.publisher ?? null,
 		final_label_id: resolveLabelId(payload),
 		rule_label: payload.rule_label ?? null,
@@ -169,7 +170,8 @@ function mapDbThesisRowToApiItem(row) {
 			universityCode: row.university_code,
 			abstractByLanguage: {
 				en: row.abstract_text || ''
-			}
+			},
+			extractedText: row.extracted_text || ''
 		},
 		ruleScore: ruleScore,
 		ruleLabel: row.rule_label || null,
