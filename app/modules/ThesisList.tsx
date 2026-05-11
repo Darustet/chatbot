@@ -48,13 +48,16 @@ const API_BASE_URL = config.API_BASE_URL;
 const RPP = 2;
 
 export default function ThesisList() {
-  const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
-  const [searchedUni, setSearchedUni] = useState<any>(uniCodes[0].code);
+  //const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
+  //const [searchedUni, setSearchedUni] = useState<any>(uniCodes[0].code);
+
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [searchedUni, setSearchedUni] = useState("");
   const [theses, setTheses] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedAuthor, setSelectedAuthor] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Add this utility function to format handles correctly
@@ -89,7 +92,9 @@ export default function ThesisList() {
           // When "All" is selected, fetch from multiple major universities
           setLoading(true);
 
-          const uniCodeList = uniCodes.map(({ uniCode }) => uniCode);
+          const uniCodeList = uniCodes
+          .filter(({ code }) => code !== "all")
+          .map(({ code }) => code);
           // Fetch from each university with increased results per page
           const allPromises = uniCodeList.map(async (uniCode) => {
             try {
@@ -150,6 +155,11 @@ export default function ThesisList() {
           }
 
           console.log(`Received ${fetchedData.length} Nokia-related thesis items from theseus.fi`);
+        }
+
+        // Verify we got data
+        if (fetchedData.length === 0) {
+          throw new Error("No Nokia-related thesis data received from theseus.fi");
         }
 
         // Update state with enhanced data
@@ -285,7 +295,14 @@ export default function ThesisList() {
               }}
               renderButton={() => (
                 <View style={styles.uniSelected}>
-                  <Text style={styles.uniSelectorText}>{selectedItem[0] || "Select University"}</Text>
+                  <Text
+                    style={[
+                      styles.uniSelectorText,
+                      !selectedItem && { color: "#999" }
+                    ]}
+                  >
+                    {selectedItem ? selectedItem[0] : "Select University"}
+                  </Text>
                 </View>
               )}
               renderItem={(item, index, isSelected) => (
@@ -345,13 +362,12 @@ export default function ThesisList() {
           <ActivityIndicator size="large" color="#0000ff" style={styles.loadingIndicator} />
           <Text style={styles.loadingText}>Loading theses...</Text>
         </View>
-      ) /*: filteredTheses.length === 0 ? (
+      ) : filteredTheses.length === 0 ? (
         <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No Nokia-related theses found matching your criteria.</Text>
           <Text style={styles.emptySubText}>Try adjusting your search filters or selecting a different university.</Text>
         </View>
-      )
-        */
-        : (
+      ) : (
         <>
           <Text style={styles.emptySubText}>Found {filteredTheses.length} theses</Text>
           <FlatList
@@ -612,7 +628,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff"
   },
   uniSelectorText: {
-    fontSize: 16
+    fontSize: 16,
+
   },
   uniSelector: {
     borderWidth: 1,
