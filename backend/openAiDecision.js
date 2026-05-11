@@ -108,35 +108,59 @@ Return "no" when:
   }
 }
 
-export async function analyzeAbstract(thesisUrl= "", title = "", abstractText = "") {
-// If thesisUrl is found in the database, then retrieve isNokiaProject and evidence from the database;
-//otherwise, use the given abstractText for analysis with OpenAI.
+export async function analyzeDecisionSource(thesisUrl = "", title = "", abstractText = "") {
 
   const result = {
     decision: "no",
     isNokiaProject: false,
     evidence: "",
-    decisionSource: "abstract",
+    decisionSource: "",
     abstractText,
     errors: [],
   };
 
-  if (!String(abstractText).trim()) {
-    result.decision = "unknown";
-    result.evidence = "Abstract text is missing.";
-    result.decisionSource = "missing_abstract";
-    return result;
-  }
+  try {
+    // Analyze title first
+    if (String(title).trim()) {
+      const titleResult = await classify(title);
 
-  const classification = await classify(abstractText);
+      // If title gives YES, return immediately
+      if (!titleResult.error && titleResult.decision === "yes") {
+        result.decision = "yes";
+        result.isNokiaProject = true;
+        result.evidence = titleResult.evidence;
+        result.decisionSource = "title";
+        return result;
+      }
+    }
+
+    // Otherwise analyze abstract
+    if (!String(abstractText).trim()) {
+      result.decision = "unknown";
+      result.evidence = "Abstract text is missing.";
+      result.decisionSource = "missing_abstract";
+      return result;
+    }
+
+    const abstractResult = await classify(abstractText);
 
   if (classification.error) {
     result.errors.push(`Abstract classification failed: ${classification.error}`);
   }
 
-  result.decision = classification.decision;
-  result.isNokiaProject = classification.decision === "yes";
-  result.evidence = classification.evidence;
+    result.decision = abstractResult.decision;
+    result.isNokiaProject = abstractResult.decision === "yes";
+    result.evidence = abstractResult.evidence;
+    result.decisionSource = "abstract";
 
-  return result;
+    return result;
+  } catch (err) {
+    result.errors.push(
+      `Unexpected error: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+
+    return result;
+  }
 }

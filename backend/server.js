@@ -9,7 +9,7 @@ import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
 import { uniCodes, validUniCodes } from "./config/universities.js";
 import { createThesisEntry, findThesisByLink } from "./database/services/thesisService.js";
-import { analyzeAbstract } from "./openAiDecision.js";
+import { analyzeDecisionSource } from "./openAiDecision.js";
 
 const app = express();
 
@@ -131,7 +131,7 @@ app.get("/uni/:uni", async (req, res) => {
         continue;
       }
 
-      const getOpenAIDecision = await analyzeAbstract(thesis.link, thesis.title, abstract);
+      const getOpenAIDecision = await analyzeDecisionSource(thesis.link, thesis.title, abstract);
 
       item.openAI_decision = getOpenAIDecision.decision || "unknown";
       item.openAI_evidence = getOpenAIDecision.evidence || "unknown";
