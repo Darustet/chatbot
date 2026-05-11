@@ -10,7 +10,6 @@ export const DownloadCsv = ({ elements }) => {
     'date',
     'link',
     'nokiaScore',
-    //'abstract',
     'openAI_decision',
     'openAI_evidence'
   ];
