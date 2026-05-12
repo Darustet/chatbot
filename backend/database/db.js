@@ -21,41 +21,11 @@ if (labelsCount === 0) {
 }
 
 // // TEST
-//insert a test row
-/* const insert = db.prepare(`
-  INSERT INTO theses (
-    title, author, year, university, university_code, handle, link, thesisId,
-    abstract_text, final_label_id, rule_label, rule_score, rule_reasons,
-    ml_label, ml_probability, hybrid_label, hybrid_reasons, openAI_decision, openAI_evidence
-  )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`).run(
-  "Test Thesis",
-  "John Doe",
-  2024,
-  "Test University",
-  "TEST_UNIV",
-  "12345/67890",
-  "http://example.com/thesis/12345/67890",
-  null,
-  "This is a test abstract.",
-  null,
-  "NOKIA_COLLABORATION",
-  8,
-  "Contains keywords related to Nokia.",
-  null,
-  null,
-  null,
-  null,
-  "yes",
-  "Both rule-based and ML approaches indicate a collaboration with Nokia."
-);
-
-console.log("Inserted test thesis with ID:", insert.lastInsertRowid);
-*/
-
 //Show all tables in the database
 //console.log("Tables in database:", db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all());
+
+//Delete all rows from theses table (for testing purposes)
+//db.prepare('DELETE FROM theses').run();
 
 // Fetch all rows from theses table and log them
 // const allTheses = db.prepare('SELECT * FROM theses').all();

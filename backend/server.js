@@ -1,7 +1,6 @@
 import axios from "axios";
 import express from "express";
-import 'dotenv/config';
-import db from "./database/db.js";
+import "dotenv/config";
 import * as cheerio from "cheerio";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
@@ -9,6 +8,8 @@ import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
 import { uniCodes, validUniCodes } from "./config/universities.js";
+import { createThesisEntry, findThesisByLink } from "./database/services/thesisService.js";
+import { analyzeDecisionSource } from "./openAiDecision.js";
 
 const app = express();
 
@@ -95,7 +96,7 @@ app.get("/uni/:uni", async (req, res) => {
 
         const thesesWithScores = filtered.map((t) => {
             const thesis = t.thesis || {};
-            const link = thesis.link || resolveThesisLink(thesis.handle, thesis.universityCode || uniCode);
+            const link = thesis.link || resolveThesisLink(thesis.handle, thesis.universityCode);
             const thesisWithLink = { ...thesis, link };
             const scoreData = calculateNokiaCollaborationScoreByRules(thesisWithLink);
             return {
@@ -106,13 +107,71 @@ app.get("/uni/:uni", async (req, res) => {
             };
         });
 
-        const thesesWithScoreSorted = thesesWithScores.sort((a, b) => b._nokiaScore - a._nokiaScore);
+        const thesesWithScoreSorted = thesesWithScores.sort(
+          (a, b) => b._nokiaScore - a._nokiaScore
+        );
 
-        return res.json(thesesWithScoreSorted);
-    } catch (error) {
-        console.error(`Error fetching or processing data for university ${uniCode}:`, error);
-        return res.status(500).json({ error: `Failed to fetch or process data for university ${uniCode}` });
+        for (const item of thesesWithScoreSorted) {
+          const thesis = item.thesis;
+
+          const abstract = Object.values(thesis.abstractByLanguage || {})
+            .join(" ")
+            .toLowerCase();
+
+      const existingThesis = await findThesisByLink(thesis.link);
+
+      if (existingThesis) {
+        console.log(
+          `Thesis with link ${thesis.link} already exists in the database.`
+        );
+
+        item.openAI_decision = existingThesis.openAI_decision || "unknown";
+        item.openAI_evidence = existingThesis.openAI_evidence || "unknown";
+
+        continue;
+      }
+
+      const getOpenAIDecision = await analyzeDecisionSource(thesis.link, thesis.title, abstract);
+
+      item.openAI_decision = getOpenAIDecision.decision || "unknown";
+      item.openAI_evidence = getOpenAIDecision.evidence || "unknown";
+
+      const ThesisToInsertDb = await createThesisEntry({
+        title: thesis.title,
+        author: thesis.author,
+        year: thesis.year,
+        university: thesis.publisher || "Unknown University",
+        university_code: thesis.universityCode || uniCode,
+        handle: thesis.handle,
+        link: thesis.link,
+        thesisId: thesis.thesisId || null,
+        abstract_text: abstract,
+        final_label_id: null,
+
+        rule_label: item._nokiaRelevance,
+        rule_score: item._nokiaScore,
+        rule_reasons: item._nokiaReasons?.join("; ") || null,
+
+        ml_label: null,
+        ml_probability: null,
+        hybrid_label: null,
+        hybrid_reasons: null,
+
+        openAI_decision: item.openAI_decision,
+        openAI_evidence: item.openAI_evidence,
+      });
+
+      console.log("Successfully inserted thesis link:", ThesisToInsertDb.link);
     }
+
+    return res.json(thesesWithScoreSorted);
+  } catch (error) {
+    console.error(`Error fetching or processing data for university ${uniCode}:`, error);
+
+    return res.status(500).json({
+      error: `Failed to fetch or process data for university ${uniCode}`,
+    });
+  }
 });
 
 app.get("/single-thesis/:handle", async (req, res) => {

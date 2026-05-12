@@ -1,10 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import {
-  fetchDetailPageAbstracts,
-  runWithConcurrency
-} from "./helpers.js";
+import { fetchDetailPageAbstracts, runWithConcurrency, resolveThesisLink } from "./helpers.js";
 
 const BASE_URL = "https://oulurepo.oulu.fi/";
 const OULUREPO_SCOPE = "10024/1102";
@@ -67,15 +64,18 @@ export const OuluRepoProvider = {
 
       const abstractByLanguage = await fetchDetailPageAbstracts(handle,BASE_URL);
 
+      const link = resolveThesisLink(handle, uniCode);
+
       return normalizeThesis({
         handle,
+        link,
         thesisId: null,
         title,
         author: author || "Unknown Author",
         year: year || "Unknown Date",
         publisher: "Oulu University",
         universityCode: uniCode,
-        abstractByLanguage,
+        abstractByLanguage
       });
     });
 

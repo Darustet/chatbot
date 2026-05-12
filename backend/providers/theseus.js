@@ -1,10 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import {
-  fetchDetailPageAbstracts,
-  runWithConcurrency
-} from "./helpers.js";
+import { fetchDetailPageAbstracts, runWithConcurrency } from "./helpers.js";
 
 const BASE_URL = "https://www.theseus.fi/";
 // const theseusExampleUrl = "https://www.theseus.fi/discover?filtertype_1=vuosi&filter_relational_operator_1=equals&filter_1=%5B2023+TO+2025%5D&submit_apply_filter=&query=+nokia&scope=10024%2F12&rpp=50";
@@ -98,7 +95,7 @@ export const TheseusProvider = {
         year: year || "Unknown Date",
         publisher: publisher ? `${publisher}` : "Unknown UAS",
         universityCode: uniCode,
-        abstractByLanguage,
+        abstractByLanguage
       });
     });
 

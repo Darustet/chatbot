@@ -8,8 +8,10 @@ export const DownloadCsv = ({ elements }) => {
     'university',
     'author',
     'date',
+    'link',
     'nokiaScore',
-    'link'
+    'openAI_decision',
+    'openAI_evidence'
   ];
 
   function escapeCSV(value: any, delimiter = ';') {

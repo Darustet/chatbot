@@ -3,7 +3,8 @@ import { toAbstractByLanguage } from "./helpers.js";
 
 // Link for Aalto doc api
 const AALTO_API_BASE = "https://aaltodoc.aalto.fi/server/api";
-const AALTO_BACHELOR_SCOPE = "4e50a35c-f00f-49ae-93b2-3223353681ec"; // size=20 is the default
+const BASE_URL = "https://aaltodoc.aalto.fi";
+const AALTO_BACHELOR_SCOPE = "4e50a35c-f00f-49ae-93b2-3223353681ec";
 const AALTO_MASTER_SCOPE = "663a76cb-af53-4943-a224-19e055302c24";
 
 export const AaltoProvider = {
@@ -23,39 +24,39 @@ export const AaltoProvider = {
     return response.data?._embedded?.searchResult?._embedded?.objects ?? [];
   },
 
-  // Normalize the parsed data into a consistent format for the frontend
-  normalize(objects) {
-    return objects.map((obj, index) => {
-      const item = obj._embedded?.indexableObject ?? {};
-      const thesisId = item.id || `unknown-id-${index}`;
-      const title = item.name || "No Title";
-      const handle = item.handle ? `/handle/${item.handle}` : "";
-      const authorArr = item.metadata?.["dc.contributor.author"] ?? [];
-      const dateIssuedArr = item.metadata?.["dc.date.issued"] ?? [];
-      const publisherArr = item.metadata?.["dc.contributor"] ?? [];
+  async normalize(objects) {
+    return Promise.all(
+      objects.map(async (obj, index) => {
+        const item = obj._embedded?.indexableObject ?? {};
+        const thesisId = item.id || `unknown-id-${index}`;
+        const title = item.name || "No Title";
+        const handle = item.handle ? `/handle/${item.handle}` : "";
+        const authorArr = item.metadata?.["dc.contributor.author"] ?? [];
+        const dateIssuedArr = item.metadata?.["dc.date.issued"] ?? [];
+        const publisherArr = item.metadata?.["dc.contributor"] ?? [];
 
-      const author = authorArr.map(a => a.value).join("; ") || "Unknown Author";
-      const year = dateIssuedArr[0]?.value ?? "Unknown Date";
-      let publisher = "";
+        const author = authorArr.map(a => a.value).join("; ") || "Unknown Author";
+        const year = dateIssuedArr[0]?.value ?? "Unknown Date";
 
-      const englishPub = publisherArr.find(p => p.language === "en");
-      if (englishPub) publisher = englishPub.value;
-      else if (publisherArr[0]?.value) publisher = publisherArr[0].value;
+        let publisher = "";
+        const englishPub = publisherArr.find((p) => p.language === "en");
+        if (englishPub) publisher = englishPub.value;
+        else if (publisherArr[0]?.value) publisher = publisherArr[0].value;
 
-      const abstracts = item.metadata?.["dc.description.abstract"]; // array of { value, language }
+        const abstracts = item.metadata?.["dc.description.abstract"]; // array of { value, language }
+        const abstractByLanguage = toAbstractByLanguage(abstracts);
 
-      const abstractByLanguage = toAbstractByLanguage(abstracts);
-      
-      return normalizeThesis({
-        handle,
-        thesisId,
-        title,
-        author,
-        year,
-        publisher: publisher || "Aalto University",
-        universityCode: "AALTO",
-        abstractByLanguage,
-      });
-    });
-  }
+        return normalizeThesis({
+          handle,
+          thesisId,
+          title,
+          author,
+          year,
+          publisher: publisher || "Aalto University",
+          universityCode: "AALTO",
+          abstractByLanguage
+        });
+      })
+    );
+  },
 };

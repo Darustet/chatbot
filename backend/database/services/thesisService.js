@@ -1,6 +1,7 @@
 import {
 	getAllTheses,
 	getThesisById,
+	getThesisByLink,
 	createThesis,
 	updateThesis,
 	deleteThesis
@@ -82,13 +83,14 @@ function normalizeThesisPayload(payload = {}) {
 		hybrid_label: payload.hybrid_label ?? null,
 		hybrid_reasons: payload.hybrid_reasons ?? null,
 		openAI_decision: payload.openAI_decision ?? null,
-		evidence: payload.openAI_evidence ?? null,
+		openAI_evidence: payload.openAI_evidence ?? null,
 	};
 }
 
 const listTheses = () => getAllTheses();
 
 const findThesisById = (id) => getThesisById(id);
+const findThesisByLink = (link) => getThesisByLink(link);
 
 const createThesisEntry = (payload) => {
 	const thesis = normalizeThesisPayload(payload);
@@ -105,6 +107,7 @@ const deleteThesisEntry = (id) => deleteThesis(id);
 export {
 	listTheses,
 	findThesisById,
+	findThesisByLink,
 	createThesisEntry,
 	updateThesisEntry,
 	deleteThesisEntry,

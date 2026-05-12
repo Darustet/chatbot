@@ -94,7 +94,7 @@ export const TrepoProvider = {
         year: year || "Unknown Date",
         publisher: publisher || "Tampere University",
         universityCode: uniCode,
-        abstractByLanguage,
+        abstractByLanguage
       });
     });
   });

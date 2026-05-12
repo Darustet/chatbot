@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { normalizeThesis } from "./types.js";
-import { fetchDetailPageAbstracts, runWithConcurrency } from "./helpers.js";
+import { fetchDetailPageAbstracts, runWithConcurrency, resolveThesisLink } from "./helpers.js";
 
 const BASE_URL = "https://lutpub.lut.fi/";
 const LUT_BACHELOR_SCOPE = "10024/158300";
@@ -80,7 +80,7 @@ export const LutPubProvider = {
         author: author || "Unknown Author",
         year: year || "Unknown Date",
         publisher: "LUT University",
-        universityCode: uniCode,
+        universityCode: "LUTPUB",
         abstractByLanguage,
       });
     });
