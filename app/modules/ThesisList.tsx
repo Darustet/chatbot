@@ -48,9 +48,6 @@ const API_BASE_URL = config.API_BASE_URL;
 const RPP = 2;
 
 export default function ThesisList() {
-  //const [selectedItem, setSelectedItem] = useState<any>([uniCodes[0].uni, uniCodes[0].code]);
-  //const [searchedUni, setSearchedUni] = useState<any>(uniCodes[0].code);
-
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchedUni, setSearchedUni] = useState("");
   const [theses, setTheses] = useState<any[]>([]);
@@ -487,103 +484,13 @@ export default function ThesisList() {
   );
 }
 
-export const countMetropoliaNokiaTheses = async () => {
-  try {
-    const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=100");
-    if (!response.ok) {
-      throw new Error(`Failed to fetch theses: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Filter theses based on Nokia relevance
-    const relevantTheses = data.filter((thesis: any) => {
-      const title = (thesis?.title || "").toLowerCase();
-      const description = (thesis?.description || "").toLowerCase();
-      const abstract = (thesis?.abstract || "").toLowerCase();
-
-      let nokiaScore = 0;
-
-      // Calculate Nokia relevance score
-      if (title.includes("nokia")) nokiaScore += 5;
-      if (description.includes("nokia") || abstract.includes("nokia")) nokiaScore += 3;
-
-      const relevantPhrases = [
-        "collaboration with nokia",
-        "nokia project",
-        "nokia case study",
-        "nokia corporation",
-        "nokia technologies",
-      ];
-
-      relevantPhrases.forEach((phrase) => {
-        if (title.includes(phrase) || description.includes(phrase) || abstract.includes(phrase)) {
-          nokiaScore += 3;
-        }
-      });
-
-      const relevance = nokiaScore >= 8 ? "high" : nokiaScore >= 3 ? "medium" : "low";
-      return relevance === "high" || relevance === "medium";
-    });
-
-    return relevantTheses.length;
-  } catch (error) {
-    console.error("Error counting Metropolia Nokia theses:", error);
-    return 0; // Return 0 in case of an error
-  }
-};
-
-export const countMetropoliaRelevantTheses = async () => {
-  try {
-    const response = await fetch("http://localhost:3000/uni/10024%2F6?query=nokia&rpp=20");
-    if (!response.ok) {
-      throw new Error(`Failed to fetch theses: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Filter theses based on Nokia relevance
-    const relevantTheses = data.filter((thesis: any) => {
-      const title = (thesis?.title || "").toLowerCase();
-      const description = (thesis?.description || "").toLowerCase();
-      const abstract = (thesis?.abstract || "").toLowerCase();
-
-      let nokiaScore = 0;
-
-      // Calculate Nokia relevance score
-      if (title.includes("nokia")) nokiaScore += 5;
-      if (description.includes("nokia") || abstract.includes("nokia")) nokiaScore += 3;
-
-      const relevantPhrases = [
-        "collaboration with nokia",
-        "nokia project",
-        "nokia case study",
-        "nokia corporation",
-        "nokia technologies",
-      ];
-
-      relevantPhrases.forEach((phrase) => {
-        if (title.includes(phrase) || description.includes(phrase) || abstract.includes(phrase)) {
-          nokiaScore += 3;
-        }
-      });
-
-      const relevance = nokiaScore >= 8 ? "high" : nokiaScore >= 3 ? "medium" : "low";
-      return relevance === "high" || relevance === "medium";
-    });
-
-    return relevantTheses.length;
-  } catch (error) {
-    console.error("Error counting relevant Metropolia theses:", error);
-    return 0; // Return 0 in case of an error
-  }
-};
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: "90%",
+    minHeight: "100%",
     backgroundColor: "#ffffff",
-    padding: 20
+    padding: 20,
   },
   filterSection: {
     marginBottom: 30,
@@ -683,6 +590,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
+
     borderRadius: 10
   },
   hoveredText: {

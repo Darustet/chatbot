@@ -35,7 +35,7 @@ export default function Chatbot({ visible = false, onClose }: ChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hi! 👋 I\'m your Nokia assistant. Ask me about theses, dashboard data, or universities!',
+      text: 'Hi! 👋 I\'m your Nokia assistant. Ask me about theses or universities!',
       isUser: false,
       timestamp: new Date(),
     }
