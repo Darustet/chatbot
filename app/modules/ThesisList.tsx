@@ -248,12 +248,28 @@ export default function ThesisList() {
       const title = thesis.title || thesis.thesis?.title || "";
       const author = thesis.author || thesis.thesis?.author || "";
       const year = thesis.year || thesis.thesis?.year || thesis.date || thesis.thesis?.date || "";
+      const abstractByLanguage =
+        thesis.abstractByLanguage ||
+        thesis.thesis?.abstractByLanguage ||
+        {};
+      const abstract = Object.values(abstractByLanguage)
+        .filter(value => typeof value === "string")
+        .join(" ");
 
-      const matchesTitle = title.toLowerCase().includes(searchTerm.toLowerCase());
+      const search = searchTerm.toLowerCase();
+
+      //Search field -> title + abstract
+      const matchesSearch =searchTerm === "" ||
+      title.toLowerCase().includes(search) ||
+      abstract.toLowerCase().includes(search);
+
+      //Author field -> only author
       const matchesAuthor = selectedAuthor === "" || author.toLowerCase().includes(selectedAuthor.toLowerCase());
+
+      //Year field -> only year
       const matchesYear = selectedYear === "" || year.includes(selectedYear);
 
-      return matchesTitle && matchesAuthor && matchesYear;
+      return matchesSearch && matchesAuthor && matchesYear;
     })
     .sort((a, b) => {
       const aRelevanceRank = relevanceOrder[getItemRelevance(a)] ?? relevanceOrder.NOT_SCORED;
