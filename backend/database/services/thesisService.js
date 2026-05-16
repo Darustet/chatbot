@@ -42,6 +42,7 @@ function normalizeThesisPayload(payload = {}) {
     thesisId: payload.thesisId ?? payload.thesis_id ?? null,
     abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
     rule_score: toIntOrNull(payload.rule_score),
+    rule_label: payload.rule_label ?? null,
     rule_reasons: toTextOrNull(payload.rule_reasons),
     openAI_decision: payload.openAI_decision ?? null,
     openAI_evidence: payload.openAI_evidence ?? null

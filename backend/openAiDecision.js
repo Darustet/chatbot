@@ -89,7 +89,7 @@ Return "no" when:
               },
               evidence: {
                 type: "string",
-                "description": "One short sentence in English.",
+                description: "One short sentence in English.",
               },
             },
             required: ["decision", "evidence"],
@@ -115,6 +115,7 @@ export async function analyzeDecisionSource(thesisUrl = "", title = "", abstract
     isNokiaProject: false,
     evidence: "",
     decisionSource: "",
+    thesisUrl,
     abstractText,
     errors: [],
   };
@@ -124,7 +125,10 @@ export async function analyzeDecisionSource(thesisUrl = "", title = "", abstract
     if (String(title).trim()) {
       const titleResult = await classify(title);
 
-      // If title gives YES, return immediately
+      if (titleResult.error) {
+        result.errors.push(`Title classification failed: ${titleResult.error}`);
+      }
+
       if (!titleResult.error && titleResult.decision === "yes") {
         result.decision = "yes";
         result.isNokiaProject = true;
@@ -134,9 +138,9 @@ export async function analyzeDecisionSource(thesisUrl = "", title = "", abstract
       }
     }
 
-    // Otherwise analyze abstract
     if (!String(abstractText).trim()) {
       result.decision = "unknown";
+      result.isNokiaProject = false;
       result.evidence = "Abstract text is missing.";
       result.decisionSource = "missing_abstract";
       return result;
@@ -144,9 +148,11 @@ export async function analyzeDecisionSource(thesisUrl = "", title = "", abstract
 
     const abstractResult = await classify(abstractText);
 
-  if (classification.error) {
-    result.errors.push(`Abstract classification failed: ${classification.error}`);
-  }
+    if (abstractResult.error) {
+      result.errors.push(
+        `Abstract classification failed: ${abstractResult.error}`
+      );
+    }
 
     result.decision = abstractResult.decision;
     result.isNokiaProject = abstractResult.decision === "yes";
