@@ -53,7 +53,8 @@ export default function ThesisList() {
   const [theses, setTheses] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedAuthor, setSelectedAuthor] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [startYear, setStartYear] = useState<string>("");
+  const [endYear, setEndYear] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -247,13 +248,39 @@ export default function ThesisList() {
       // Support both the nested and direct structures
       const title = thesis.title || thesis.thesis?.title || "";
       const author = thesis.author || thesis.thesis?.author || "";
+
       const year = thesis.year || thesis.thesis?.year || thesis.date || thesis.thesis?.date || "";
+      const thesisYear = Number(year);
+      const startYearNum = Number(startYear);
+      const start = startYear === "" ? null : Number(startYear);
+      const end = endYear === "" ? null : Number(endYear);
 
-      const matchesTitle = title.toLowerCase().includes(searchTerm.toLowerCase());
+      const abstractByLanguage =
+        thesis.abstractByLanguage ||
+        thesis.thesis?.abstractByLanguage ||
+        {};
+      const abstract = Object.values(abstractByLanguage)
+        .filter(value => typeof value === "string")
+        .join(" ");
+
+      const search = searchTerm.toLowerCase();
+
+      //Search field -> title + abstract
+      const matchesSearch =searchTerm === "" ||
+      title.toLowerCase().includes(search) ||
+      abstract.toLowerCase().includes(search);
+
+      //Author field -> only author
       const matchesAuthor = selectedAuthor === "" || author.toLowerCase().includes(selectedAuthor.toLowerCase());
-      const matchesYear = selectedYear === "" || year.includes(selectedYear);
 
-      return matchesTitle && matchesAuthor && matchesYear;
+      //Year field -> only year
+      // Check if thesis year falls within the specified range (if provided)
+      const matchesYear =
+      !Number.isNaN(thesisYear) &&
+      (start === null || thesisYear >= start) &&
+      (end === null || thesisYear <= end);
+
+      return matchesSearch && matchesAuthor && matchesYear;
     })
     .sort((a, b) => {
       const aRelevanceRank = relevanceOrder[getItemRelevance(a)] ?? relevanceOrder.NOT_SCORED;
@@ -319,10 +346,18 @@ export default function ThesisList() {
 
           <TextInput
             style={styles.inputField}
-            placeholder="Filter by year..."
+            placeholder="From Year..."
             placeholderTextColor="#999"
             keyboardType="numeric"
-            onChangeText={text => setSelectedYear(text)}
+            onChangeText={text => setStartYear(text)}
+          />
+
+            <TextInput
+            style={styles.inputField}
+            placeholder="To Year..."
+            placeholderTextColor="#999"
+            keyboardType="numeric"
+            onChangeText={text => setEndYear(text)}
           />
         </View>
 
