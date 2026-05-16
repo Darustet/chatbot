@@ -34,7 +34,6 @@ run_all.sh
 - `GET /single-thesis/:handle`
 - `GET /health`
 - `POST /api/admin/collect-theses`
-- `GET/PUT /api/admin/dashboard`
 - `/api/chatbot/*`
 
 ### Flask (`http://localhost:5001`)
@@ -46,23 +45,32 @@ run_all.sh
 
 For detailed Flask endpoint behavior, see `backend/summary-script/README.md`.
 
-## SQLite Data Storage
 
-Thesis records are stored in:
+## MongoDB setup
+Install mongoose: 
+``` 
+ npm install mongoose
+```
 
-- `backend/theses.sqlite`
+### MongoDB view as a table
+
+1. Install MongoDB Compass from https://www.mongodb.com/try/download/compass
+2. Open MongoDB Compass and add new connect to MongoDB
+
+- (URI:  mmongodb+srv://admin:admin123@cluster0.m3qwzdj.mongodb.net/thesisList?retryWrites=true&w=majority&appName=chatbot).
+
+Thesis records are stored in MongoDB collection `theses` in database `thesisList`. Each document includes thesis metadata, rule-based scores, and OpenAI outputs:
 
 Data written during collection includes:
 
 - Thesis metadata (title, author, year, university, handle, link, abstract).
-- Rule-based score and label (`rule_score`, `rule_label`, `rule_reasons`).
-- ML output (`ml_probability`, `ml_label`).
-- Hybrid/final decision fields (`hybrid_label`, `hybrid_reasons`, `final_label_id`).
+- Rule-based score and label (`rule_score`, `rule_reasons`).
+- OpenAI output (`openAI_secision`, `openAI_evidence`).
 
 Repository and service layers:
 
 - `backend/database/repositories/`
-- `backend/database/services/thesisService.js`
+- `backend/database/services/`
 
 ## Admin Collection Endpoint
 
@@ -103,16 +111,10 @@ Response (shape):
 Notes:
 
 - Duplicates are skipped using a normalized key (handle/title/year/universityCode).
-- If ML classification fails, rule-based data is still saved.
 
 ## Troubleshooting
 
-1. Collection works but ML fields are empty
-
-- Ensure Flask is running on port `5001`.
-- Check `GET http://localhost:5001/ml-ready`.
-
-2. Collection endpoint returns unknown university code
+1.  Collection endpoint returns unknown university code
 
 - Verify `uniCode` exists in `backend/config/universities.js`.
 

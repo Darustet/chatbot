@@ -1,60 +1,36 @@
-import db from '../db.js';
+import Label from '../models/label.js';
 
-const getLabelIdByName = (name) => {
-  const labelId = db
-    .prepare('SELECT id FROM labels WHERE name = ?')
-    .get(name);
-  if (!labelId) {
-    return null;
-  }
-  return labelId.id;
+const getAllLabels = async () => {
+  return await Label.find().sort({ createdAt: -1 });
 };
 
-const getLabelById = (id) => {
-  const label = db
-    .prepare('SELECT * FROM labels WHERE id = ?')
-    .get(id);
-  if (!label) {
-    return null;
-  }
-  return label;
+const getLabelById = async (id) => {
+  return await Label.findById(id);
 };
 
-
-const createLabel = (name) => {
-  const stmt = db
-    .prepare('INSERT INTO labels (name) VALUES (?)')
-    .run(name);
-  if (stmt.lastInsertRowid === 0) {
-    throw new Error('Failed to create label');
-  }
-  return getLabelIdByName(name);
+const getLabelByName = async (name) => {
+  return await Label.findOne({ name });
 };
 
-const updateLabel = (id, name) => {
-  const stmt = db
-    .prepare('UPDATE labels SET name = ? WHERE id = ?')
-    .run(name, id);
-  if (stmt.changes === 0) {
-    throw new Error('Failed to update label');
-  }
-  return getLabelById(id);
+const createLabel = async (label) => {
+  return await Label.create(label);
 };
 
-const deleteLabel = (id) => {
-  const deleteTransaction  = db.transaction((labelId) => {
-    const stmt = db.prepare('DELETE FROM labels WHERE id = ?').run(id);
-    if (stmt.changes === 0) {
-      throw new Error('Failed to delete label');
-    }
+const updateLabel = async (id, label) => {
+  return await Label.findByIdAndUpdate(id, label, {
+    new: true,
+    runValidators: true
   });
+};
 
-  deleteTransaction(id);
-}
+const deleteLabel = async (id) => {
+  return await Label.findByIdAndDelete(id);
+};
 
 export {
-  getLabelIdByName,
+  getAllLabels,
   getLabelById,
+  getLabelByName,
   createLabel,
   updateLabel,
   deleteLabel

@@ -1,7 +1,8 @@
 import axios from "axios";
 import express from "express";
-import "dotenv/config";
+import dotenv from "dotenv";
 import * as cheerio from "cheerio";
+import mongoose from "mongoose";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
@@ -143,20 +144,11 @@ app.get("/uni/:uni", async (req, res) => {
         university: thesis.publisher || "Unknown University",
         university_code: thesis.universityCode || uniCode,
         handle: thesis.handle,
-        link: thesis.link,
         thesisId: thesis.thesisId || null,
-        abstract_text: abstract,
-        final_label_id: null,
-
-        rule_label: item._nokiaRelevance,
+        link: thesis.link || null,
+        abstractText: abstract,
         rule_score: item._nokiaScore,
         rule_reasons: item._nokiaReasons?.join("; ") || null,
-
-        ml_label: null,
-        ml_probability: null,
-        hybrid_label: null,
-        hybrid_reasons: null,
-
         openAI_decision: item.openAI_decision,
         openAI_evidence: item.openAI_evidence,
       });
@@ -227,9 +219,26 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-    console.log("🚀 Server is running on port 3000");
-    console.log("📊 Admin panel available at /api/admin");
-    console.log("🤖 Chatbot API available at /api/chatbot");
-    console.log("🏥 Health check available at /health");
-});
+const startServer = async () => {
+  try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error("Missing MONGO_URI in .env");
+    }
+
+    await mongoose.connect(process.env.MONGODB_URI);
+
+    console.log("MongoDB connected");
+
+    app.listen(3000, () => {
+      console.log("🚀 Server is running on port 3000");
+      console.log("📊 Admin panel available at /api/admin");
+      console.log("🤖 Chatbot API available at /api/chatbot");
+      console.log("🏥 Health check available at /health");
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error?.message || error);
+    process.exit(1);
+  }
+};
+
+startServer();

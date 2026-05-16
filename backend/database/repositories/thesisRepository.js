@@ -1,117 +1,37 @@
-import db from '../db.js';
+import Thesis from '../models/thesis.js';
 
-const getAllTheses = () => {
-  return db.prepare('SELECT * FROM theses').all();
+const getAllTheses = async () => {
+  return await Thesis.find().sort({ createdAt: -1 });
 };
 
-const getThesisById = (id) => {
-  const result = db
-    .prepare('SELECT * FROM theses WHERE id = ?')
-    .get(id);
-  if (!result) {
-    throw new Error('Thesis not found');
-  }
-  return result;
+const getThesisById = async (id) => {
+  return await Thesis.findById(id);
 };
 
-const getThesisByLink = (link) => {
-  return db
-    .prepare('SELECT * FROM theses WHERE link = ?')
-    .get(link) || null;
+const getThesisByLink = async (link) => {
+  return await Thesis.findOne({ link });
 };
 
-const createThesis = (thesis) => {
-  const stmt = db
-  .prepare(`
-    INSERT INTO theses (
-      title, author, year, university, university_code, handle, link, thesisId,
-      abstract_text, final_label_id, rule_label, rule_score, rule_reasons,
-      ml_label, ml_probability, hybrid_label, hybrid_reasons, openAI_decision, openAI_evidence
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-    .run(
-    thesis.title,
-    thesis.author,
-    thesis.year,
-    thesis.university,
-    thesis.university_code,
-    thesis.handle,
-    thesis.link,
-    thesis.thesisId,
-    thesis.abstract_text,
-    thesis.final_label_id,
-    thesis.rule_label,
-    thesis.rule_score,
-    thesis.rule_reasons,
-    thesis.ml_label,
-    thesis.ml_probability,
-    thesis.hybrid_label,
-    thesis.hybrid_reasons,
-    thesis.openAI_decision,
-    thesis.openAI_evidence);
-
-  if (!stmt.lastInsertRowid) {
-    throw new Error('Failed to insert thesis');
-  }
-  return getThesisById(stmt.lastInsertRowid);
+const createThesis = async (thesis) => {
+  return await Thesis.create(thesis);
 };
 
-const updateThesis = (id, thesis) => {
-  const stmt = db
-    .prepare(`
-      UPDATE theses SET
-        title = ?, author = ?, year = ?, university = ?, university_code = ?, handle = ?, link = ?,
-        thesisId = ?, abstract_text = ?, final_label_id = ?, rule_label = ?, rule_score = ?, rule_reasons = ?,
-        ml_label = ?, ml_probability = ?, hybrid_label = ?, hybrid_reasons = ?,
-        openAI_decision = ?, openAI_evidence = ?
-      WHERE id = ?
-    `)
-    .run(
-      thesis.title,
-      thesis.author,
-      thesis.year,
-      thesis.university,
-      thesis.university_code,
-      thesis.handle,
-      thesis.link,
-      thesis.thesisId,
-      thesis.abstract_text,
-      thesis.final_label_id,
-      thesis.rule_label,
-      thesis.rule_score,
-      thesis.rule_reasons,
-      thesis.ml_label,
-      thesis.ml_probability,
-      thesis.hybrid_label,
-      thesis.hybrid_reasons,
-      thesis.openAI_decision,
-      thesis.openAI_evidence,
-      id
-    );
-
-  if (stmt.changes === 0) {
-    throw new Error("Failed to update thesis");
-  }
-
-  return getThesisById(id);
+const updateThesis = async (id, thesis) => {
+  return await Thesis.findByIdAndUpdate(id, thesis, {
+    new: true,
+    runValidators: true
+  });
 };
 
-const deleteThesis = (id) => {
-  const stmt = db
-    .prepare('DELETE FROM theses WHERE id = ?')
-    .run(id); 
-  if (stmt.changes === 0) {
-    throw new Error('Failed to delete thesis');
-  }
-  return { id, deleted: true };
+const deleteThesis = async (id) => {
+  return await Thesis.findByIdAndDelete(id);
 };
 
-export { 
-  getAllTheses, 
+export {
+  getAllTheses,
   getThesisById,
   getThesisByLink,
-  createThesis, 
-  updateThesis, 
+  createThesis,
+  updateThesis,
   deleteThesis
 };
