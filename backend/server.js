@@ -148,9 +148,10 @@ app.get("/uni/:uni", async (req, res) => {
         link: thesis.link || null,
         abstractText: abstract,
         rule_score: item._nokiaScore,
+        rule_label: item._nokiaRelevance,
         rule_reasons: item._nokiaReasons?.join("; ") || null,
         openAI_decision: item.openAI_decision,
-        openAI_evidence: item.openAI_evidence,
+        openAI_evidence: item.openAI_evidence
       });
 
       console.log("Successfully inserted thesis link:", ThesisToInsertDb.link);
