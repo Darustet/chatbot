@@ -30,6 +30,7 @@ const connectDB = async () => {
                       Kyselyyn vastasi 185 henkilöä ja sen mukaan suurin osa vierailijoista huomioi piha-alueet aina tai usein. Noin 60 prosenttia valitsisi golfkentän, jolla on runsaasti istutuksia, ja noin 39 prosenttia golfkentän, jolla on hillitysti istutuksia.
                       Johtopäätökseksi tuli, että piha-alueilla on rooli yrityksen vetovoimaan viihtyvyyden kannalta.`,
         rule_score: 13,
+        rule_label: 'NOKIA_COLLABORATION',
         rule_reasons: 'Nokia mentioned',
         openAI_decision: 'no',
         openAI_evidence:
