@@ -148,10 +148,9 @@ app.get("/uni/:uni", async (req, res) => {
         link: thesis.link || null,
         abstract_text: abstract,
         rule_score: item._nokiaScore,
-        rule_label: item._nokiaRelevance,
         rule_reasons: item._nokiaReasons?.join("; ") || null,
         openAI_decision: item.openAI_decision,
-        openAI_evidence: item.openAI_evidence
+        openAI_evidence: item.openAI_evidence,
       });
 
       console.log("Successfully inserted thesis link:", ThesisToInsertDb.link);
@@ -170,12 +169,12 @@ app.get("/uni/:uni", async (req, res) => {
 app.get("/single-thesis/:handle", async (req, res) => {
     const handle = req.params.handle;
     console.log(`Received request for single thesis with handle: ${handle}`);
-
+    
     try {
         // Construct the full URL to the thesis
         const fullThesisUrl = `https://www.theseus.fi${handle}`;
         console.log(`Attempting to fetch download link from: ${fullThesisUrl}`);
-
+        
         // Fetch the HTML content of the thesis page
         const response = await axios.get(fullThesisUrl, {
             headers: {
@@ -220,26 +219,9 @@ app.get('/health', (req, res) => {
     });
 });
 
-const startServer = async () => {
-  try {
-    if (!process.env.MONGODB_URI) {
-      throw new Error("Missing MONGO_URI in .env");
-    }
-
-    await mongoose.connect(process.env.MONGODB_URI);
-
-    console.log("MongoDB connected");
-
-    app.listen(3000, () => {
-      console.log("🚀 Server is running on port 3000");
-      console.log("📊 Admin panel available at /api/admin");
-      console.log("🤖 Chatbot API available at /api/chatbot");
-      console.log("🏥 Health check available at /health");
-    });
-  } catch (error) {
-    console.error("❌ Failed to start server:", error?.message || error);
-    process.exit(1);
-  }
-};
-
-startServer();
+app.listen(3000, () => {
+    console.log("🚀 Server is running on port 3000");
+    console.log("📊 Admin panel available at /api/admin");
+    console.log("🤖 Chatbot API available at /api/chatbot");
+    console.log("🏥 Health check available at /health");
+});
