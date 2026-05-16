@@ -163,94 +163,6 @@ async function fetchScoredThesesByUniversity(context) {
   return thesesWithScores;
 }
 
-// GET dashboard data
-router.get('/dashboard', async (req, res) => {
-  try {
-    const data = await fs.readFile(dashboardFilePath, 'utf8');
-    res.json(JSON.parse(data));
-  } catch (error) {
-    console.error('Error reading dashboard data:', error);
-    if (error.code === 'ENOENT') {
-      // If file doesn't exist, return default structure
-      const defaultData = {
-        education: {
-          courses: 10,
-          workshops: 5
-        },
-        research_development: {
-          projects: 8,
-          publications: 15
-        },
-        common_events: {
-          conferences: 3,
-          meetups: 7
-        }
-      };
-      
-      // Create directory if it doesn't exist
-      try {
-        await fs.mkdir(path.dirname(dashboardFilePath), { recursive: true });
-        // Write default data to file
-        await fs.writeFile(dashboardFilePath, JSON.stringify(defaultData, null, 2), 'utf8');
-        return res.json(defaultData);
-      } catch (writeError) {
-        console.error('Error creating default dashboard data:', writeError);
-        return res.status(500).json({ message: 'Failed to initialize dashboard data' });
-      }
-    }
-    res.status(500).json({ message: 'Failed to fetch dashboard data' });
-  }
-});
-
-// UPDATE dashboard data
-router.put('/dashboard', async (req, res) => {
-  try {
-    console.log('Received PUT request to update dashboard data');
-    console.log('Request body:', req.body);
-    
-    const data = req.body;
-    
-    // Validate input structure
-    if (!data || typeof data !== 'object') {
-      console.error('Invalid data format received');
-      return res.status(400).json({ message: 'Invalid data format' });
-    }
-
-    // Simple validation for expected structure
-    const requiredSections = ['education', 'research_development', 'common_events'];
-    for (const section of requiredSections) {
-      if (!data[section] || typeof data[section] !== 'object') {
-        console.error(`Missing or invalid section: ${section}`);
-        return res.status(400).json({ 
-          message: `Missing or invalid section: ${section}` 
-        });
-      }
-    }
-
-    // Make sure directory exists
-    await fs.mkdir(path.dirname(dashboardFilePath), { recursive: true });
-    
-    // Log file path
-    console.log('Writing to file:', dashboardFilePath);
-    
-    // Write to file
-    await fs.writeFile(
-      dashboardFilePath, 
-      JSON.stringify(data, null, 2),
-      'utf8'
-    );
-    
-    console.log('Dashboard data updated successfully');
-    res.json({ message: 'Dashboard updated successfully' });
-  } catch (error) {
-    console.error('Error updating dashboard data:', error);
-    res.status(500).json({ 
-      message: 'Failed to update dashboard data',
-      details: error.message 
-    });
-  }
-});
-
 router.post('/collect-theses', async (req, res) => {
   try {
     const uniCode = String(req.body?.uniCode || 'all');
@@ -338,16 +250,10 @@ router.post('/collect-theses', async (req, res) => {
             link: thesis.link || null,
             thesisId: thesis.thesisId || null,
             abstractText,
-            publisher: thesis.publisher || null,
-            labelName: finalLabelUsed, // final_label_id is resolved in thesisService from labelName.
-            nokia_reasons: reasonParts,
-            rule_label: ruleLabel,
             rule_score: item._nokiaScore ?? null,
             rule_reasons: item._nokiaReasons ?? null,
-            ml_label: mlLabel,
-            ml_probability: mlProbability,
-            hybrid_label: hybridLabel,
-            hybrid_reasons: reasonParts.join('; '),
+            openAI_decision: finalLabelUsed,
+            openAI_evidence: reasonParts.join("; ")
           };
 
           const thesisKey = makeThesisKey({
@@ -365,7 +271,7 @@ router.post('/collect-theses', async (req, res) => {
           }
 
           try {
-            createThesisEntry(payload);
+            await createThesisEntry(payload);
             existingKeys.add(thesisKey);
             runKeys.add(thesisKey);
             uniSummary.saved += 1;
