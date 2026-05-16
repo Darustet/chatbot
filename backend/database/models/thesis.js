@@ -12,6 +12,7 @@ const thesisSchema = new mongoose.Schema(
     thesisId: String,
     abstract_text: String,
     rule_score: Number,
+    rule_label: String,
     rule_reasons: String,
     openAI_decision: String,
     openAI_evidence: String
