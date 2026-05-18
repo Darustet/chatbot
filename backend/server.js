@@ -146,7 +146,7 @@ app.get("/uni/:uni", async (req, res) => {
         handle: thesis.handle,
         thesisId: thesis.thesisId || null,
         link: thesis.link || null,
-        abstractText: abstract,
+        abstract_text: abstract,
         rule_score: item._nokiaScore,
         rule_label: item._nokiaRelevance,
         rule_reasons: item._nokiaReasons?.join("; ") || null,
