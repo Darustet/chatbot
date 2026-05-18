@@ -41,7 +41,6 @@ run_all.sh
 - `GET /ping`
 - `GET /summary`
 - `POST /classify-thesis`
-- `GET /ml-ready`
 
 For detailed Flask endpoint behavior, see `backend/summary-script/README.md`.
 
