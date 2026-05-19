@@ -4,6 +4,8 @@ import "dotenv/config";
 import * as cheerio from "cheerio";
 import path from "path";
 import { fileURLToPath } from "url";
+import { existsSync } from "fs";
+import { execSync } from "child_process";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
@@ -18,6 +20,25 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendBuildDir = path.resolve(__dirname, "..", "dist");
 const summaryServiceBaseUrl = process.env.SUMMARY_SERVICE_URL || "http://127.0.0.1:5001";
+
+function ensureFrontendBuild() {
+    const indexPath = path.join(frontendBuildDir, "index.html");
+
+    if (existsSync(indexPath)) {
+        return;
+    }
+
+    if (!process.env.RENDER) {
+        return;
+    }
+
+    console.log(`🛠️  Missing ${indexPath}, building web export before startup...`);
+    execSync("npm run build:web", {
+        cwd: path.resolve(__dirname, ".."),
+        stdio: "inherit",
+        env: process.env,
+    });
+}
 
 // Add JSON body parser middleware
 app.use(express.json());
@@ -271,6 +292,7 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+ensureFrontendBuild();
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
     console.log(`🖥️  Serving web app from ${frontendBuildDir}`);

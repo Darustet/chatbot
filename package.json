@@ -5,6 +5,7 @@
   "scripts": {
     "start": "expo start",
     "build:web": "expo export -p web",
+    "render:start": "npm run build:web && node backend/server.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
