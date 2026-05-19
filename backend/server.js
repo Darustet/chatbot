@@ -17,6 +17,7 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendBuildDir = path.resolve(__dirname, "..", "dist");
+const summaryServiceBaseUrl = process.env.SUMMARY_SERVICE_URL || "http://127.0.0.1:5001";
 
 // Add JSON body parser middleware
 app.use(express.json());
@@ -218,10 +219,40 @@ app.get("/single-thesis/:handle", async (req, res) => {
 app.use("/api/admin", adminRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 
+async function proxyToSummaryService(req, res, targetPath) {
+    try {
+        const response = await axios.request({
+            method: req.method,
+            url: `${summaryServiceBaseUrl}${targetPath}`,
+            params: req.query,
+            data: req.body,
+            timeout: 30000,
+            validateStatus: () => true,
+        });
+
+        res.status(response.status);
+        if (response.headers["content-type"]) {
+            res.setHeader("Content-Type", response.headers["content-type"]);
+        }
+        return res.send(response.data);
+    } catch (error) {
+        console.error(`Error proxying ${targetPath} to summary service:`, error);
+        return res.status(503).json({
+            error: "Summary service is unavailable",
+            target: summaryServiceBaseUrl,
+        });
+    }
+}
+
+app.get("/ping", (req, res) => proxyToSummaryService(req, res, "/ping"));
+app.get("/ml-ready", (req, res) => proxyToSummaryService(req, res, "/ml-ready"));
+app.get("/summary", (req, res) => proxyToSummaryService(req, res, "/summary"));
+app.post("/classify-thesis", (req, res) => proxyToSummaryService(req, res, "/classify-thesis"));
+
 // Serve the built Expo web app from the same service so Render only needs one open port.
 app.use(express.static(frontendBuildDir));
 
-app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/health$).*/, (req, res) => {
+app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/summary$|\/ping$|\/ml-ready$|\/classify-thesis$|\/health$).*/, (req, res) => {
     res.sendFile(path.join(frontendBuildDir, "index.html"));
 });
 
