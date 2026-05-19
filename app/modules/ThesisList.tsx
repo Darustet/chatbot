@@ -1,5 +1,5 @@
 import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity } from "react-native";
-import SelectDropdown from 'react-native-select-dropdown';
+//import SelectDropdown from 'react-native-select-dropdown';
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
@@ -9,6 +9,8 @@ import { DownloadCsv } from "../components/DownloadCsv";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
+  {"uni": "All UAS", "code": "allUas"},
+  {"uni": "All Universities", "code": "allUniversities"},
   {"uni": "Centria UAS", "code": "10024%2F1900"},
   {"uni": "Diakonia UAS", "code": "10024%2F1552"},
   {"uni": "Haaga-Helia UAS", "code": "10024%2F431"},
@@ -43,17 +45,54 @@ const uniCodes = [
   {"uni": "LUT University", "code": "LUTPUB"}
 ];
 
+const allUasCodes = uniCodes
+  .filter(({ code }) =>
+    code !== "all" &&
+    code !== "allUas" &&
+    code !== "allUniversities" &&
+    code.startsWith("10024%2F")
+  )
+  .map(({ code }) => code);
+
+const allUniversityCodes = uniCodes
+  .filter(({ code }) =>
+    code !== "all" &&
+    code !== "allUas" &&
+    code !== "allUniversities" &&
+    !code.startsWith("10024%2F")
+  )
+  .map(({ code }) => code);
+
+const mainOptions = [
+  { uni: "All", code: "all" },
+  { uni: "All UAS", code: "allUas" },
+  { uni: "All Universities", code: "allUniversities" },
+];
+
+const uasOptions = uniCodes.filter(
+  u => u.code.startsWith("10024%2F")
+);
+
+const universityOptions = uniCodes.filter(
+  u =>
+    !u.code.startsWith("10024%2F") &&
+    !["all", "allUas", "allUniversities"].includes(u.code)
+);
+
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
 const RPP = 2;
 
 export default function ThesisList() {
   const [selectedItem, setSelectedItem] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
   const [searchedUni, setSearchedUni] = useState("");
   const [theses, setTheses] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedAuthor, setSelectedAuthor] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [startYear, setStartYear] = useState<string>("");
+  const [endYear, setEndYear] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -124,6 +163,42 @@ export default function ThesisList() {
           fetchedData = results.flat();
 
           console.log(`Combined ${fetchedData.length} Nokia-related thesis items from multiple universities`);
+        } else if (searchedUni === "allUas" || searchedUni === "allUniversities") {
+          const uniCodeList =
+            searchedUni === "allUas" ? allUasCodes : allUniversityCodes;
+
+          const allPromises = uniCodeList.map(async (uniCode) => {
+            try {
+              const uniResponse = await fetch(
+                `${API_BASE_URL}/uni/${uniCode}?query=nokia&rpp=${RPP}`
+              );
+
+              if (uniResponse.ok) {
+                const uniData = await uniResponse.json();
+                const uniInfo = uniCodes.find(u => u.code === uniCode);
+
+                return uniData.map((thesis: any) => ({
+                  ...thesis,
+                  universityCodeStr: uniCode,
+                  _universityName: uniInfo ? uniInfo.uni : null
+                }));
+              }
+
+              return [];
+            } catch (error) {
+              console.warn(`Error fetching from university ${uniCode}:`, error);
+              return [];
+            }
+          });
+
+          const results = await Promise.all(allPromises);
+          fetchedData = results.flat();
+
+          console.log(
+            `Combined ${fetchedData.length} thesis items from ${
+              searchedUni === "allUas" ? "all UAS" : "all universities"
+            }`
+          );
         } else {
           // For a specific university, proceed with the existing endpoint but with increased results
           const endpoint = `${API_BASE_URL}/uni/${searchedUni}?query=nokia&rpp=${RPP}`;
@@ -247,13 +322,39 @@ export default function ThesisList() {
       // Support both the nested and direct structures
       const title = thesis.title || thesis.thesis?.title || "";
       const author = thesis.author || thesis.thesis?.author || "";
+
       const year = thesis.year || thesis.thesis?.year || thesis.date || thesis.thesis?.date || "";
+      const thesisYear = Number(year);
+      const startYearNum = Number(startYear);
+      const start = startYear === "" ? null : Number(startYear);
+      const end = endYear === "" ? null : Number(endYear);
 
-      const matchesTitle = title.toLowerCase().includes(searchTerm.toLowerCase());
+      const abstractByLanguage =
+        thesis.abstractByLanguage ||
+        thesis.thesis?.abstractByLanguage ||
+        {};
+      const abstract = Object.values(abstractByLanguage)
+        .filter(value => typeof value === "string")
+        .join(" ");
+
+      const search = searchTerm.toLowerCase();
+
+      //Search field -> title + abstract
+      const matchesSearch =searchTerm === "" ||
+      title.toLowerCase().includes(search) ||
+      abstract.toLowerCase().includes(search);
+
+      //Author field -> only author
       const matchesAuthor = selectedAuthor === "" || author.toLowerCase().includes(selectedAuthor.toLowerCase());
-      const matchesYear = selectedYear === "" || year.includes(selectedYear);
 
-      return matchesTitle && matchesAuthor && matchesYear;
+      //Year field -> only year
+      // Check if thesis year falls within the specified range (if provided)
+      const matchesYear =
+      !Number.isNaN(thesisYear) &&
+      (start === null || thesisYear >= start) &&
+      (end === null || thesisYear <= end);
+
+      return matchesSearch && matchesAuthor && matchesYear;
     })
     .sort((a, b) => {
       const aRelevanceRank = relevanceOrder[getItemRelevance(a)] ?? relevanceOrder.NOT_SCORED;
@@ -280,34 +381,87 @@ export default function ThesisList() {
         />
 
         <View style={styles.filterRow}>
-          <View style={styles.dropdownContainer}>
-            <SelectDropdown
-              data={uniCodes.map(uni => uni.uni)}
-              onSelect={(selectedItem: string) => {
-                const selectedUni = uniCodes.find(uni => uni.uni === selectedItem);
-                if (selectedUni) {
-                  setSelectedItem([selectedUni.uni, selectedUni.code]);
-                  setSearchedUni(selectedUni.code); // Update the searched university code
-                }
-              }}
-              renderButton={() => (
-                <View style={styles.uniSelected}>
-                  <Text
-                    style={[
-                      styles.uniSelectorText,
-                      !selectedItem && { color: "#999" }
-                    ]}
+          <View style={styles.customDropdownWrapper}>
+            <TouchableOpacity
+              style={styles.uniSelected}
+              onPress={() => setDropdownOpen(!dropdownOpen)}
+            >
+              <Text
+                style={[
+                  styles.uniSelectorText,
+                  !selectedItem && { color: "#999" }
+                ]}
+              >
+                {selectedItem ? selectedItem[0] : "Select University"}
+              </Text>
+            </TouchableOpacity>
+
+            {dropdownOpen && (
+              <View style={styles.customDropdown}>
+                {mainOptions.map(option => (
+                  <TouchableOpacity
+                    key={option.code}
+                    style={styles.dropdownMainItem}
+                    onMouseEnter={() => {
+                      if (
+                        option.code === "allUas" ||
+                        option.code === "allUniversities"
+                      ) {
+                        setHoveredGroup(option.code);
+                      } else {
+                        setHoveredGroup(null);
+                      }
+                    }}
+                    onPress={() => {
+                      setSelectedItem([option.uni, option.code]);
+                      setSearchedUni(option.code);
+                      setDropdownOpen(false);
+                      setHoveredGroup(null);
+                    }}
                   >
-                    {selectedItem ? selectedItem[0] : "Select University"}
-                  </Text>
-                </View>
-              )}
-              renderItem={(item, index, isSelected) => (
-                <View style={styles.uniSelector}>
-                  <Text style={styles.uniSelectorText}>{item}</Text>
-                </View>
-              )}
-            />
+                    <Text style={styles.uniSelectorText}>{option.uni}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {dropdownOpen && hoveredGroup === "allUas" && (
+              <View style={styles.subDropdown}>
+                {uasOptions.map(option => (
+                  <TouchableOpacity
+                    key={option.code}
+                    style={styles.dropdownSubItem}
+                    onPress={() => {
+                      setSelectedItem([option.uni, option.code]);
+                      setSearchedUni(option.code);
+                      setDropdownOpen(false);
+                      setHoveredGroup(null);
+                    }}
+                  >
+                    <Text style={styles.uniSelectorText}>{option.uni}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {dropdownOpen && hoveredGroup === "allUniversities" && (
+              <View style={styles.subDropdown}>
+                {universityOptions.map(option => (
+                  <TouchableOpacity
+                    key={option.code}
+                    style={styles.dropdownSubItem}
+                    onPress={() => {
+                      setSelectedItem([option.uni, option.code]);
+                      setSearchedUni(option.code);
+                      setDropdownOpen(false);
+                      setHoveredGroup(null);
+                    }}
+                  >
+                    <Text style={styles.uniSelectorText}>{option.uni}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           <TextInput
@@ -319,10 +473,18 @@ export default function ThesisList() {
 
           <TextInput
             style={styles.inputField}
-            placeholder="Filter by year..."
+            placeholder="From Year..."
             placeholderTextColor="#999"
             keyboardType="numeric"
-            onChangeText={text => setSelectedYear(text)}
+            onChangeText={text => setStartYear(text)}
+          />
+
+          <TextInput
+            style={styles.inputField}
+            placeholder="To Year..."
+            placeholderTextColor="#999"
+            keyboardType="numeric"
+            onChangeText={text => setEndYear(text)}
           />
         </View>
 
@@ -500,7 +662,9 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5
+    shadowRadius: 5,
+    zIndex: 9999,
+    elevation: 9999,
   },
   filterLabel: {
     fontSize: 18,
@@ -520,23 +684,23 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20
+    alignItems: "flex-start",
+    marginBottom: 20,
+    zIndex: 9999,
+    elevation: 9999,
   },
   dropdownContainer: {
     flex: 1,
     marginRight: 10
   },
   uniSelected: {
+    height: 38,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#fff"
-  },
-  uniSelectorText: {
-    fontSize: 16,
-
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    paddingHorizontal: 10,
   },
   uniSelector: {
     borderWidth: 1,
@@ -663,5 +827,59 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold'
+  },
+  customDropdownWrapper: {
+    position: "relative",
+    flex: 1,
+    marginRight: 10,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+
+  customDropdown: {
+    position: "absolute",
+    top: 38,
+    left: 0,
+    width: "100%",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+
+
+  dropdownMainItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    backgroundColor: "#fff",
+  },
+
+  subDropdown: {
+    position: "absolute",
+    left: 200,
+    top: 58,
+    width: 600,
+
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+
+    padding: 10,
+
+    flexDirection: "row",
+    flexWrap: "wrap",
+
+    zIndex: 999999,
+    elevation: 999999,
+  },
+  dropdownSubItem: {
+    width: "33.33%",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
 });
