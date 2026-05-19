@@ -56,7 +56,7 @@ Install mongoose:
 1. Install MongoDB Compass from https://www.mongodb.com/try/download/compass
 2. Open MongoDB Compass and add new connect to MongoDB
 
-- (URI:  mmongodb+srv://admin:admin123@cluster0.m3qwzdj.mongodb.net/thesisList?retryWrites=true&w=majority&appName=chatbot).
+- URI: MONGODB_URI(.env).
 
 Thesis records are stored in MongoDB collection `theses` in database `thesisList`. Each document includes thesis metadata, rule-based scores, and OpenAI outputs:
 
