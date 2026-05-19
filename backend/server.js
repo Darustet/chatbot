@@ -5,7 +5,6 @@ import * as cheerio from "cheerio";
 import path from "path";
 import { fileURLToPath } from "url";
 import { existsSync } from "fs";
-import { execSync } from "child_process";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
@@ -19,26 +18,8 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendBuildDir = path.resolve(__dirname, "..", "dist");
+const frontendIndexPath = path.join(frontendBuildDir, "index.html");
 const summaryServiceBaseUrl = process.env.SUMMARY_SERVICE_URL || "http://127.0.0.1:5001";
-
-function ensureFrontendBuild() {
-    const indexPath = path.join(frontendBuildDir, "index.html");
-
-    if (existsSync(indexPath)) {
-        return;
-    }
-
-    if (!process.env.RENDER) {
-        return;
-    }
-
-    console.log(`🛠️  Missing ${indexPath}, building web export before startup...`);
-    execSync("npm run build:web", {
-        cwd: path.resolve(__dirname, ".."),
-        stdio: "inherit",
-        env: process.env,
-    });
-}
 
 // Add JSON body parser middleware
 app.use(express.json());
@@ -274,7 +255,10 @@ app.post("/classify-thesis", (req, res) => proxyToSummaryService(req, res, "/cla
 app.use(express.static(frontendBuildDir));
 
 app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/summary$|\/ping$|\/ml-ready$|\/classify-thesis$|\/health$).*/, (req, res) => {
-    res.sendFile(path.join(frontendBuildDir, "index.html"));
+    if (!existsSync(frontendIndexPath)) {
+        return res.status(503).send("Frontend build is missing. Run npm run build:web during deploy build step.");
+    }
+    res.sendFile(frontendIndexPath);
 });
 
 // Health check endpoint for the main server
@@ -292,7 +276,6 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-ensureFrontendBuild();
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
     console.log(`🖥️  Serving web app from ${frontendBuildDir}`);
