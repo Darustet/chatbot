@@ -10,8 +10,9 @@ function getApiBaseUrl() {
   // Try multiple URLs in order of precedence
   const possibleUrls = [
     getStoredApiUrl(),        // 1. User-configured URL (if any)
-    'http://localhost:5001',  // 2. Standard localhost
-    'http://127.0.0.1:5001'   // 3. Alternative localhost
+    '0.0.0.0:5001',           // 2. For Render deployment
+    'http://localhost:5001',  // 3. Standard localhost
+    'http://127.0.0.1:5001'   // 4. Alternative localhost 
   ];
   
   // Use the first non-null URL
