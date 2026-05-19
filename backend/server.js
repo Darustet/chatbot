@@ -227,8 +227,9 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-    console.log("🚀 Server is running on port 3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
     console.log("📊 Admin panel available at /api/admin");
     console.log("🤖 Chatbot API available at /api/chatbot");
     console.log("🏥 Health check available at /health");
