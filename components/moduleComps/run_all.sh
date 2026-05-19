@@ -33,4 +33,7 @@ echo "Python API:http://localhost:5001"
 echo
 
 echo "Opening browser at http://localhost:8081 ..."
-open "http://localhost:8081"
+echo "http://localhost:8081"
+
+echo "Opening browser at https://chatbot-render-y3bs.onrender.com ..."
+open "https://chatbot-render-y3bs.onrender.com"
