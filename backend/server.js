@@ -2,6 +2,8 @@ import axios from "axios";
 import express from "express";
 import "dotenv/config";
 import * as cheerio from "cheerio";
+import path from "path";
+import { fileURLToPath } from "url";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
@@ -12,6 +14,9 @@ import { createThesisEntry, findThesisByLink } from "./database/services/thesisS
 import { analyzeDecisionSource } from "./openAiDecision.js";
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendBuildDir = path.resolve(__dirname, "..", "dist");
 
 // Add JSON body parser middleware
 app.use(express.json());
@@ -213,6 +218,13 @@ app.get("/single-thesis/:handle", async (req, res) => {
 app.use("/api/admin", adminRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 
+// Serve the built Expo web app from the same service so Render only needs one open port.
+app.use(express.static(frontendBuildDir));
+
+app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/health$).*/, (req, res) => {
+    res.sendFile(path.join(frontendBuildDir, "index.html"));
+});
+
 // Health check endpoint for the main server
 app.get('/health', (req, res) => {
     res.json({
@@ -230,6 +242,7 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`🖥️  Serving web app from ${frontendBuildDir}`);
     console.log("📊 Admin panel available at /api/admin");
     console.log("🤖 Chatbot API available at /api/chatbot");
     console.log("🏥 Health check available at /health");

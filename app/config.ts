@@ -1,5 +1,8 @@
  export const config = {
-  API_BASE_URL: 'http://0.0.0.0:3000',
+  API_BASE_URL:
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'http://localhost:3000',
 }
 
 /* export const config = {

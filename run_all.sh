@@ -30,7 +30,9 @@ start_services_directly() {
     wait
 }
 
-if [[ "$(uname -s)" == "Darwin" && -z "${RENDER:-}" && -z "${CI:-}" ]]; then
+if [[ -n "${RENDER:-}" || -n "${CI:-}" ]]; then
+    exec node "$ROOT_DIR/backend/server.js"
+elif [[ "$(uname -s)" == "Darwin" ]]; then
     echo
     echo "===================================="
     echo "Opening 3 Terminal windows..."
