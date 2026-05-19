@@ -60,7 +60,9 @@ EOF
 
     if command -v open >/dev/null 2>&1; then
         echo "Opening browser at http://localhost:${FRONTEND_PORT} ..."
-        open "http://localhost:${FRONTEND_PORT}"
+        echo open "http://localhost:${FRONTEND_PORT}"
+        echo "Opening browser at http://0.0.0.0:${FRONTEND_PORT} ..."
+        open "http://0.0.0.0:${FRONTEND_PORT}"
     else
         echo "Browser open skipped: no local browser command available."
     fi
