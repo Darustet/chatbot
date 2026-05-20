@@ -6,6 +6,11 @@ echo "===== RUN ALL (macOS, 3 terminals) ====="
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FRONTEND_PORT="${PORT:-8081}"
 
+if [[ -n "${RENDER:-}" || -n "${CI:-}" ]]; then
+    echo "Render/CI environment detected. Starting only backend web service on PORT=${PORT:-3000}."
+    exec node "$ROOT_DIR/backend/server.js"
+fi
+
 start_services_directly() {
     echo
     echo "Starting services in the current shell..."
