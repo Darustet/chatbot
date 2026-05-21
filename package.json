@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
     "build:web": "expo export -p web",
+    "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",

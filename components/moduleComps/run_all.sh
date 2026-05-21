@@ -32,7 +32,7 @@ start_services_directly() {
 
 if [[ -n "${RENDER:-}" || -n "${CI:-}" ]]; then
     exec node "$ROOT_DIR/backend/server.js"
-elif [[ "$(uname -s)" == "Darwin" ]]; then    echo
+elif [[ "$(uname -s)" == "Darwin" && -n "${TERM_PROGRAM:-}" && -x /usr/bin/osascript ]]; then    echo
     echo "===================================="
     echo "Opening 3 Terminal windows..."
     echo "===================================="
@@ -71,6 +71,10 @@ else
     start_services_directly
 fi
 
-echo "Opening browser at https://chatbot-render-y3bs.onrender.com ..."
-open "https://chatbot-render-y3bs.onrender.com"
+if [[ -n "${RENDER:-}" || -n "${CI:-}" ]]; then
+    echo "Headless environment detected; browser launch skipped."
+elif command -v open >/dev/null 2>&1; then
+    echo "Opening browser at https://chatbot-render-y3bs.onrender.com ..."
+    open "https://chatbot-render-y3bs.onrender.com"
+fi
 
