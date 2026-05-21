@@ -232,6 +232,17 @@ app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/health$).*/, (req, res) => {
 });
 
 // Health check endpoint for the main server
+
+// Serve the built Expo web app from the same Render web service.
+app.use(express.static(frontendBuildDir));
+
+app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/health$).*/, (req, res) => {
+    if (!existsSync(frontendIndexPath)) {
+        return res.status(503).send("Frontend build is missing. Run npm run build:web during deploy build step.");
+    }
+
+    res.sendFile(frontendIndexPath);
+});
 app.get('/health', (req, res) => {
     res.json({
         status: 'healthy',
