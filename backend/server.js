@@ -19,7 +19,66 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendBuildDir = path.resolve(__dirname, "..", "dist");
 const frontendIndexPath = path.join(frontendBuildDir, "index.html");
-const summaryServiceBaseUrl = process.env.SUMMARY_SERVICE_URL || "http://127.0.0.1:5001";
+const isProductionLike = Boolean(process.env.RENDER || process.env.NODE_ENV === "production");
+const summaryServiceBaseUrl = resolveSummaryServiceBaseUrl();
+
+function resolveSummaryServiceBaseUrl() {
+    const configuredUrl = process.env.SUMMARY_SERVICE_URL || process.env.ML_SERVICE_URL || "";
+    const normalizedUrl = normalizeServiceUrl(configuredUrl);
+
+    if (normalizedUrl) {
+        return normalizedUrl;
+    }
+
+    return isProductionLike ? null : "http://127.0.0.1:5001";
+}
+
+function normalizeServiceUrl(rawValue) {
+    if (!rawValue) {
+        return null;
+    }
+
+    const trimmedValue = String(rawValue).trim().replace(/^['\"]|['\"]$/g, "");
+    if (!trimmedValue) {
+        return null;
+    }
+
+    const needsHttpScheme = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/|$)/i.test(trimmedValue);
+    const candidateUrl = /^https?:\/\//i.test(trimmedValue)
+        ? trimmedValue
+        : `${needsHttpScheme ? "http" : "https"}://${trimmedValue}`;
+
+    try {
+        const parsedUrl = new URL(candidateUrl);
+        if (!/^https?:$/.test(parsedUrl.protocol)) {
+            return null;
+        }
+
+        return parsedUrl.origin.replace(/\/$/, "");
+    } catch {
+        return null;
+    }
+}
+
+function getRequestOrigin(req) {
+    const forwardedProto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+    const forwardedHost = String(req.headers["x-forwarded-host"] || req.get("host") || "").split(",")[0].trim();
+    const protocol = forwardedProto || (req.secure ? "https" : "http") || "http";
+
+    if (!forwardedHost) {
+        return null;
+    }
+
+    return `${protocol}://${forwardedHost}`;
+}
+
+function isSameOrigin(leftUrl, rightUrl) {
+    try {
+        return new URL(leftUrl).origin === new URL(rightUrl).origin;
+    } catch {
+        return String(leftUrl).replace(/\/$/, "") === String(rightUrl).replace(/\/$/, "");
+    }
+}
 
 // Add JSON body parser middleware
 app.use(express.json());
@@ -222,6 +281,25 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 
 async function proxyToSummaryService(req, res, targetPath) {
+    const requestOrigin = getRequestOrigin(req);
+
+    if (!summaryServiceBaseUrl) {
+        return res.status(503).json({
+            error: "Summary service is unavailable",
+            reason: "SUMMARY_SERVICE_URL is not configured for production.",
+            target: null,
+        });
+    }
+
+    if (requestOrigin && isSameOrigin(summaryServiceBaseUrl, requestOrigin)) {
+        return res.status(503).json({
+            error: "Summary service is misconfigured",
+            reason: "SUMMARY_SERVICE_URL points to this web app. Set it to the separate Python summary service URL.",
+            target: summaryServiceBaseUrl,
+            currentApp: requestOrigin,
+        });
+    }
+
     try {
         const response = await axios.request({
             method: req.method,
@@ -242,6 +320,7 @@ async function proxyToSummaryService(req, res, targetPath) {
         return res.status(503).json({
             error: "Summary service is unavailable",
             target: summaryServiceBaseUrl,
+            currentApp: requestOrigin,
         });
     }
 }

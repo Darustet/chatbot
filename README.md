@@ -67,6 +67,8 @@ This will opening 3 Terminal windows and start all services automatically. Your 
 - Node backend (Express): http://localhost:3000
 - Python summary + classification service (Flask): http://localhost:5001
 
+For Render deployments, `SUMMARY_SERVICE_URL` must point to the separate Python summary service URL, not the main web app URL. If it points to the web app itself, `/summary` will return a 503 misconfiguration error.
+
 # Collection Flow (Admin)
 
 `POST /api/admin/collect-theses` runs one end-to-end sequence:
