@@ -2,6 +2,9 @@ import axios from "axios";
 import express from "express";
 import "dotenv/config";
 import * as cheerio from "cheerio";
+import path from "path";
+import { fileURLToPath } from "url";
+import { existsSync } from "fs";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
@@ -12,6 +15,11 @@ import { createThesisEntry, findThesisByLink } from "./database/services/thesisS
 import { analyzeDecisionSource } from "./openAiDecision.js";
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendBuildDir = path.resolve(__dirname, "..", "dist");
+const frontendIndexPath = path.join(frontendBuildDir, "index.html");
+const summaryServiceBaseUrl = process.env.SUMMARY_SERVICE_URL || "http://127.0.0.1:5001";
 
 // Add JSON body parser middleware
 app.use(express.json());
@@ -213,6 +221,47 @@ app.get("/single-thesis/:handle", async (req, res) => {
 app.use("/api/admin", adminRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 
+async function proxyToSummaryService(req, res, targetPath) {
+    try {
+        const response = await axios.request({
+            method: req.method,
+            url: `${summaryServiceBaseUrl}${targetPath}`,
+            params: req.query,
+            data: req.body,
+            timeout: 30000,
+            validateStatus: () => true,
+        });
+
+        res.status(response.status);
+        if (response.headers["content-type"]) {
+            res.setHeader("Content-Type", response.headers["content-type"]);
+        }
+        return res.send(response.data);
+    } catch (error) {
+        console.error(`Error proxying ${targetPath} to summary service:`, error);
+        return res.status(503).json({
+            error: "Summary service is unavailable",
+            target: summaryServiceBaseUrl,
+        });
+    }
+}
+
+app.get("/ping", (req, res) => proxyToSummaryService(req, res, "/ping"));
+app.get("/ml-ready", (req, res) => proxyToSummaryService(req, res, "/ml-ready"));
+app.get("/summary", (req, res) => proxyToSummaryService(req, res, "/summary"));
+app.post("/classify-thesis", (req, res) => proxyToSummaryService(req, res, "/classify-thesis"));
+
+
+// Serve the built Expo web app from the same service so Render only needs one open port.
+app.use(express.static(frontendBuildDir));
+
+app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/summary$|\/ping$|\/ml-ready$|\/classify-thesis$|\/health$).*/, (req, res) => {
+    if (!existsSync(frontendIndexPath)) {
+        return res.status(503).send("Frontend build is missing. Run npm run build:web during deploy build step.");
+    }
+    res.sendFile(frontendIndexPath);
+});
+
 // Health check endpoint for the main server
 app.get('/health', (req, res) => {
     res.json({
@@ -227,8 +276,10 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-    console.log("🚀 Server is running on port 3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`🖥️  Serving web app from ${frontendBuildDir}`);
     console.log("📊 Admin panel available at /api/admin");
     console.log("🤖 Chatbot API available at /api/chatbot");
     console.log("🏥 Health check available at /health");

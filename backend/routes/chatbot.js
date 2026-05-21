@@ -264,8 +264,8 @@ async function searchTheses(query, universityCode, limit = 50) {
     
     try {
       // Force external scraping for testing, change 3001 -> 3000 if you want to test your server
-      const serverUrl = `http://localhost:3001/uni/${universityCode}?query=${encodeURIComponent(query)}&rpp=${limit}`;
-      console.log(`Fetching from your server: ${serverUrl}`);
+      // const serverUrl = `http://localhost:3001/uni/${universityCode}?query=${encodeURIComponent(query)}&rpp=${limit}`;
+      const serverUrl = `http://0.0.0.0:3001/uni/${universityCode}?query=${encodeURIComponent(query)}&rpp=${limit}`;      console.log(`Fetching from your server: ${serverUrl}`);
       
       const serverResponse = await axios.get(serverUrl, {
         headers: {

@@ -10,8 +10,9 @@ function getApiBaseUrl() {
   // Try multiple URLs in order of precedence
   const possibleUrls = [
     getStoredApiUrl(),        // 1. User-configured URL (if any)
-    'http://localhost:5001',  // 2. Standard localhost
-    'http://127.0.0.1:5001'   // 3. Alternative localhost
+    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : null, // 2. Same-origin on web
+    'http://localhost:5001',  // 3. Standard localhost
+    'http://127.0.0.1:5001'   // 4. Alternative localhost 
   ];
   
   // Use the first non-null URL
@@ -79,8 +80,9 @@ function getAdminApiBaseUrl() {
   // Try multiple URLs in order of precedence
   const possibleUrls = [
     getStoredAdminApiUrl(),     // 1. User-configured admin URL (if any)
-    'http://localhost:3000',    // 2. Default Express server port
-    'http://127.0.0.1:3000'     // 3. Alternative Express server address
+    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : null, // 2. Same-origin on web
+    'http://localhost:3000',    // 3. Default Express server port
+    'http://127.0.0.1:3000'     // 4. Alternative Express server address
   ];
   
   // Use the first non-null URL
