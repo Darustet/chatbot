@@ -3,7 +3,21 @@ services:
     name: chatbot-web
     env: node
     plan: starter
+    rootDir: .
     buildCommand: CI=1 RENDER=1 npm install
     startCommand: node backend/server.js
     healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: SUMMARY_SERVICE_URL
+        value: https://chatbot-split.onrender.com
+
+  - type: web
+    name: chatbot-ml
+    env: python
+    plan: starter
+    rootDir: backend/summary-script
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /ping
     autoDeploy: true

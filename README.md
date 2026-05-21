@@ -69,6 +69,13 @@ This will opening 3 Terminal windows and start all services automatically. Your 
 
 For Render deployments, `SUMMARY_SERVICE_URL` must point to the separate Python summary service URL, not the main web app URL. If it points to the web app itself, `/summary` will return a 503 misconfiguration error.
 
+The Render blueprint in [render.yaml](render.yaml) now defines two web services:
+
+- `chatbot-web` for the Expo web frontend plus the Node/Express API.
+- `chatbot-ml` for the Python Flask ML and summary backend.
+
+If you rename the Python service in Render, update `SUMMARY_SERVICE_URL` in the Node service to match its public URL.
+
 # Collection Flow (Admin)
 
 `POST /api/admin/collect-theses` runs one end-to-end sequence:
