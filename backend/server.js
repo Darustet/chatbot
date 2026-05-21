@@ -219,24 +219,27 @@ app.get("/single-thesis/:handle", async (req, res) => {
 // Add routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/chatbot", chatbotRoutes);
-
 // Serve the built Expo web app from the same service.
-app.use(express.static(frontendBuildDir));
+// Log build directory info at startup to help diagnose deploy issues (e.g., missing `dist`).
+console.log("Resolved frontendBuildDir:", frontendBuildDir);
+console.log("frontendIndexPath:", frontendIndexPath);
+console.log("frontend index exists:", existsSync(frontendIndexPath));
 
-app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/health$).*/, (req, res) => {
-    if (!existsSync(frontendIndexPath)) {
-        return res.status(503).send("Frontend build is missing. Run npm run build:web during deploy build step.");
+if (existsSync(frontendBuildDir)) {
+    try {
+        const { readdirSync } = await import('fs');
+        const files = readdirSync(frontendBuildDir);
+        console.log('Files in frontend build dir:', files.slice(0, 50));
+    } catch (e) {
+        console.warn('Could not read frontend build dir contents:', e && e.message);
     }
+} else {
+    console.warn('Frontend build directory does not exist at startup.');
+}
 
-    res.sendFile(frontendIndexPath);
-});
-
-// Health check endpoint for the main server
-
-// Serve the built Expo web app from the same Render web service.
 app.use(express.static(frontendBuildDir));
 
-app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/health$).*/, (req, res) => {
+app.get(/^(?!\/api\/.+|\/uni\/.+|\/single-thesis\/.+|\/health$).*/, (req, res) => {
     if (!existsSync(frontendIndexPath)) {
         return res.status(503).send("Frontend build is missing. Run npm run build:web during deploy build step.");
     }
