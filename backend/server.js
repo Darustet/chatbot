@@ -2,6 +2,9 @@ import axios from "axios";
 import express from "express";
 import "dotenv/config";
 import * as cheerio from "cheerio";
+import path from "path";
+import { fileURLToPath } from "url";
+import { existsSync } from "fs";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
@@ -12,6 +15,10 @@ import { createThesisEntry, findThesisByLink } from "./database/services/thesisS
 import { analyzeDecisionSource } from "./openAiDecision.js";
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendBuildDir = path.resolve(__dirname, "..", "dist");
+const frontendIndexPath = path.join(frontendBuildDir, "index.html");
 
 // Add JSON body parser middleware
 app.use(express.json());
@@ -212,6 +219,17 @@ app.get("/single-thesis/:handle", async (req, res) => {
 // Add routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/chatbot", chatbotRoutes);
+
+// Serve the built Expo web app from the same service.
+app.use(express.static(frontendBuildDir));
+
+app.get(/^(?!\/api\/|\/uni\/|\/single-thesis\/|\/health$).*/, (req, res) => {
+    if (!existsSync(frontendIndexPath)) {
+        return res.status(503).send("Frontend build is missing. Run npm run build:web during deploy build step.");
+    }
+
+    res.sendFile(frontendIndexPath);
+});
 
 // Health check endpoint for the main server
 app.get('/health', (req, res) => {

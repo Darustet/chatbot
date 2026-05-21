@@ -5,13 +5,22 @@
 // The base URL for the backend API with flexible configuration options
 export const API_BASE_URL = getApiBaseUrl();
 
+function isLocalWebDev() {
+  return (
+    typeof window !== 'undefined' &&
+    (window.location?.hostname === 'localhost' || window.location?.hostname === '127.0.0.1')
+  );
+}
+
 // Update the getApiBaseUrl function to automatically detect IP address
 function getApiBaseUrl() {
   // Try multiple URLs in order of precedence
   const possibleUrls = [
     getStoredApiUrl(),        // 1. User-configured URL (if any)
-    'http://localhost:5001',  // 2. Standard localhost
-    'http://127.0.0.1:5001'   // 3. Alternative localhost
+    isLocalWebDev() ? 'http://localhost:5001' : null,  // 2. Local dev uses Flask on port 5001
+    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : null, // 3. Deployed web uses same origin
+    'http://localhost:5001',  // 4. Standard localhost
+    'http://127.0.0.1:5001'   // 5. Alternative localhost
   ];
   
   // Use the first non-null URL
@@ -79,8 +88,10 @@ function getAdminApiBaseUrl() {
   // Try multiple URLs in order of precedence
   const possibleUrls = [
     getStoredAdminApiUrl(),     // 1. User-configured admin URL (if any)
-    'http://localhost:3000',    // 2. Default Express server port
-    'http://127.0.0.1:3000'     // 3. Alternative Express server address
+    isLocalWebDev() ? 'http://localhost:3000' : null, // 2. Local dev uses Express on port 3000
+    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : null, // 3. Deployed web uses same origin
+    'http://localhost:3000',    // 4. Default Express server port
+    'http://127.0.0.1:3000'     // 5. Alternative Express server address
   ];
   
   // Use the first non-null URL
