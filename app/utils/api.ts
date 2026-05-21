@@ -5,12 +5,36 @@
 // The base URL for the backend API with flexible configuration options
 export const API_BASE_URL = getApiBaseUrl();
 
+function isLocalAddress(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(String(value));
+    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
+
+function getCurrentWebOrigin() {
+  if (typeof window === 'undefined' || !window.location?.origin) {
+    return null;
+  }
+
+  return window.location.origin;
+}
+
 // Update the getApiBaseUrl function to automatically detect IP address
 function getApiBaseUrl() {
+  const webOrigin = getCurrentWebOrigin();
+  const sanitizedStoredUrl = getStoredApiUrl();
+
   // Try multiple URLs in order of precedence
   const possibleUrls = [
-    getStoredApiUrl(),        // 1. User-configured URL (if any)
-    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : null, // 2. Same-origin on web
+    sanitizedStoredUrl,        // 1. User-configured URL (if any)
+    webOrigin, // 2. Same-origin on web
     'http://localhost:5001',  // 3. Standard localhost
     'http://127.0.0.1:5001'   // 4. Alternative localhost 
   ];
@@ -32,7 +56,16 @@ function getStoredApiUrl() {
   try {
     // For web environment
     if (typeof window !== 'undefined' && window.localStorage) {
-      return localStorage.getItem('backend_api_url');
+      const storedUrl = localStorage.getItem('backend_api_url');
+      const webOrigin = getCurrentWebOrigin();
+
+      // Prevent stale localhost values from breaking deployed web usage.
+      if (webOrigin && !isLocalAddress(webOrigin) && isLocalAddress(storedUrl)) {
+        localStorage.removeItem('backend_api_url');
+        return null;
+      }
+
+      return storedUrl;
     }
     
     // For React Native environment
@@ -77,10 +110,13 @@ export function setApiBaseUrl(newUrl: string) {
 export const ADMIN_API_BASE_URL = getAdminApiBaseUrl();
 
 function getAdminApiBaseUrl() {
+  const webOrigin = getCurrentWebOrigin();
+  const sanitizedStoredAdminUrl = getStoredAdminApiUrl();
+
   // Try multiple URLs in order of precedence
   const possibleUrls = [
-    getStoredAdminApiUrl(),     // 1. User-configured admin URL (if any)
-    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : null, // 2. Same-origin on web
+    sanitizedStoredAdminUrl,     // 1. User-configured admin URL (if any)
+    webOrigin, // 2. Same-origin on web
     'http://localhost:3000',    // 3. Default Express server port
     'http://127.0.0.1:3000'     // 4. Alternative Express server address
   ];
@@ -102,7 +138,15 @@ function getStoredAdminApiUrl() {
   try {
     // For web environment
     if (typeof window !== 'undefined' && window.localStorage) {
-      return localStorage.getItem('admin_backend_api_url');
+      const storedUrl = localStorage.getItem('admin_backend_api_url');
+      const webOrigin = getCurrentWebOrigin();
+
+      if (webOrigin && !isLocalAddress(webOrigin) && isLocalAddress(storedUrl)) {
+        localStorage.removeItem('admin_backend_api_url');
+        return null;
+      }
+
+      return storedUrl;
     }
     return null;
   } catch (error) {
@@ -137,21 +181,27 @@ export function setAdminApiBaseUrl(newUrl: string) {
  */
 export async function checkBackendStatus() {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(`${API_BASE_URL}/ping`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
       },
-      timeout: 5000, // 5 second timeout
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
     
     if (response.ok) {
       return { available: true, message: 'Backend server is available' };
     } else {
       return { available: false, message: `Backend server error: ${response.status}` };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Backend connectivity error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return { 
       available: false, 
       message: 'Cannot connect to backend server. Please ensure:',
@@ -159,7 +209,7 @@ export async function checkBackendStatus() {
         '1. The server is running (python downloads.py)',
         '2. Server is accessible at: ' + API_BASE_URL,
         '3. You have installed all requirements (pip install -r requirements.txt)',
-        `Error: ${error.message}`
+        `Error: ${errorMessage}`
       ]
     };
   }
@@ -197,11 +247,12 @@ export async function fetchFromApi(endpoint: string, options = {}) {
     const data = await response.json(); 
     console.log('from api.ts, response.json: ', data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`API error (${endpoint}):`, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     
     // Add better error messages for common issues
-    if (error.message === 'Failed to fetch') {
+    if (errorMessage === 'Failed to fetch') {
       throw new Error('Could not connect to the backend server. Please check if the server is running.');
     }
     
