@@ -1,6 +1,19 @@
 services:
   - type: web
-    name: chatbot-ml
+    name: chatbot-web
+    env: node
+    plan: starter
+    rootDir: .
+    buildCommand: CI=1 RENDER=1 npm install
+    startCommand: node backend/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: SUMMARY_SERVICE_URL
+        value: https://chatbot-split.onrender.com
+
+  - type: web
+    name: chatbot-split
     env: python
     plan: starter
     rootDir: backend/summary-script
