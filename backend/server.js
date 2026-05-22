@@ -6,7 +6,7 @@ import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
-import { deduplicate } from "./providers/helpers.js";
+import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
 import { uniCodes, validUniCodes } from "./config/universities.js";
 import { createThesisEntry, findThesisByLink } from "./database/services/thesisService.js";
 import { analyzeDecisionSource } from "./openAiDecision.js";
@@ -22,12 +22,12 @@ app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    
+
     // Handle OPTIONS requests
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
-    
+
     next();
 });
 
@@ -96,7 +96,9 @@ app.get("/uni/:uni", async (req, res) => {
 
         const thesesWithScores = filtered.map((t) => {
             const thesis = t.thesis || {};
-            const scoreData = calculateNokiaCollaborationScoreByRules(thesis.link);
+            const scoreData = calculateNokiaCollaborationScoreByRules(thesis);
+
+            console.log(thesis.link, "scoreData:", scoreData);
             return {
                 thesis: thesis,
                 _nokiaScore: scoreData._nokiaScore,
@@ -175,15 +177,14 @@ app.get("/uni/:uni", async (req, res) => {
 app.get("/single-thesis/:handle", async (req, res) => {
     const handle = req.params.handle;
     console.log(`Received request for single thesis with handle: ${handle}`);
-    
+
     try {
         // Construct the full URL to the thesis
         const fullThesisUrl = `https://www.theseus.fi${handle}`;
         console.log(`Attempting to fetch download link from: ${fullThesisUrl}`);
-        
+
         // Fetch the HTML content of the thesis page
         const response = await axios.get(fullThesisUrl, {
-          timeout: 15000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
