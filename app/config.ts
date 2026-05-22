@@ -1,15 +1,15 @@
 function getApiBaseUrl() {
-  const storedUrl = getStoredApiUrl();
-  if (storedUrl) {
-    return storedUrl;
-  }
-
   if (typeof window !== 'undefined' && window.location?.origin) {
     const host = window.location.hostname;
     const isLocalHost = host === 'localhost' || host === '127.0.0.1';
 
     if (!isLocalHost) {
       return window.location.origin;
+    }
+
+    const storedUrl = getStoredApiUrl();
+    if (storedUrl) {
+      return storedUrl;
     }
   }
 

@@ -7,23 +7,24 @@ export const API_BASE_URL = getApiBaseUrl();
 
 // Update the getApiBaseUrl function to automatically detect IP address
 function getApiBaseUrl() {
-  // Try multiple URLs in order of precedence
-  const possibleUrls = [
-    getStoredApiUrl(),        // 1. User-configured URL (if any)
-    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : null, // 2. Same-origin on web
-    'http://localhost:5001',  // 3. Standard localhost
-    'http://127.0.0.1:5001'   // 4. Alternative localhost 
-  ];
-  
-  // Use the first non-null URL
-  for (const url of possibleUrls) {
-    if (url) {
-      console.log('Using backend URL:', url);
-      return url;
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    const host = window.location.hostname;
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+
+    if (!isLocalHost) {
+      console.log('Using backend URL:', window.location.origin);
+      return window.location.origin;
+    }
+
+    const storedUrl = getStoredApiUrl();
+    if (storedUrl) {
+      console.log('Using backend URL:', storedUrl);
+      return storedUrl;
     }
   }
   
   // Default fallback
+  console.log('Using backend URL: http://127.0.0.1:5001');
   return 'http://127.0.0.1:5001';
 }
 
@@ -63,7 +64,7 @@ export function setApiBaseUrl(newUrl: string) {
     console.log(`API URL updated to: ${newUrl}`);
     
     // Global variable update (will be lost on reload but useful for immediate use)
-    (global as any).API_BASE_URL = newUrl;
+    (globalThis as any).API_BASE_URL = newUrl;
   } catch (error) {
     console.error('Error saving API URL:', error);
   }
@@ -77,23 +78,24 @@ export function setApiBaseUrl(newUrl: string) {
 export const ADMIN_API_BASE_URL = getAdminApiBaseUrl();
 
 function getAdminApiBaseUrl() {
-  // Try multiple URLs in order of precedence
-  const possibleUrls = [
-    getStoredAdminApiUrl(),     // 1. User-configured admin URL (if any)
-    typeof window !== 'undefined' && window.location?.origin ? window.location.origin : null, // 2. Same-origin on web
-    'http://localhost:3000',    // 3. Default Express server port
-    'http://127.0.0.1:3000'     // 4. Alternative Express server address
-  ];
-  
-  // Use the first non-null URL
-  for (const url of possibleUrls) {
-    if (url) {
-      console.log('Using admin backend URL:', url);
-      return url;
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    const host = window.location.hostname;
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+
+    if (!isLocalHost) {
+      console.log('Using admin backend URL:', window.location.origin);
+      return window.location.origin;
+    }
+
+    const storedUrl = getStoredAdminApiUrl();
+    if (storedUrl) {
+      console.log('Using admin backend URL:', storedUrl);
+      return storedUrl;
     }
   }
   
   // Default fallback
+  console.log('Using admin backend URL: http://127.0.0.1:3000');
   return 'http://127.0.0.1:3000';
 }
 
@@ -126,7 +128,7 @@ export function setAdminApiBaseUrl(newUrl: string) {
     console.log(`Admin API URL updated to: ${newUrl}`);
     
     // Global variable update (will be lost on reload but useful for immediate use)
-    (global as any).ADMIN_API_BASE_URL = newUrl;
+    (globalThis as any).ADMIN_API_BASE_URL = newUrl;
   } catch (error) {
     console.error('Error saving admin API URL:', error);
   }
@@ -137,13 +139,18 @@ export function setAdminApiBaseUrl(newUrl: string) {
  */
 export async function checkBackendStatus() {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(`${API_BASE_URL}/ping`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
       },
-      timeout: 5000, // 5 second timeout
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
     
     if (response.ok) {
       return { available: true, message: 'Backend server is available' };
@@ -152,6 +159,7 @@ export async function checkBackendStatus() {
     }
   } catch (error) {
     console.error('Backend connectivity error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return { 
       available: false, 
       message: 'Cannot connect to backend server. Please ensure:',
@@ -159,7 +167,7 @@ export async function checkBackendStatus() {
         '1. The server is running (python downloads.py)',
         '2. Server is accessible at: ' + API_BASE_URL,
         '3. You have installed all requirements (pip install -r requirements.txt)',
-        `Error: ${error.message}`
+        `Error: ${errorMessage}`
       ]
     };
   }
@@ -201,7 +209,7 @@ export async function fetchFromApi(endpoint: string, options = {}) {
     console.error(`API error (${endpoint}):`, error);
     
     // Add better error messages for common issues
-    if (error.message === 'Failed to fetch') {
+    if (error instanceof Error && error.message === 'Failed to fetch') {
       throw new Error('Could not connect to the backend server. Please check if the server is running.');
     }
     
