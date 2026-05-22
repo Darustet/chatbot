@@ -13,7 +13,6 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 # Thesis summarization endpoint using provider
 # Query params:
 # - uni: University code (AALTO, THESEUS, etc.)
-# - thesisId: For AALTO (DSpace item ID)
 # - key: For THESEUS (handle or URL)
 def summary():
     try:
