@@ -33,7 +33,7 @@ def summary():
         if not uni:
             return jsonify({"error": "No university code provided"}), 400
         
-        identifier = thesis_id if uni.upper() == 'AALTO' else key
+        identifier = key or thesis_id
         if not identifier:
             return jsonify({"error": "No thesis identifier provided"}), 400
         
