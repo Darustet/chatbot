@@ -1,5 +1,5 @@
-from transformers import pipeline
 import re
+import os
 
 
 try:
@@ -16,12 +16,19 @@ except ImportError:
     print("Warning: nltk not installed. Falling back to simple split.")
     sent_tokenize = None
 
-try:
-    summarizer = pipeline("summarization", model="facebook/bart-large-cnn", use_fast=True)
-    print("Successfully loaded facebook/bart-large-cnn model")
-except Exception as e:
-    print(f"Warning: Failed to load the summarization model: {e}")
-    summarizer = None
+def get_transformer_summarizer():
+    if os.environ.get("ENABLE_TRANSFORMER_SUMMARY", "0").lower() not in {"1", "true", "yes", "on"}:
+        return None
+
+    try:
+        from transformers import pipeline
+
+        summarizer = pipeline("summarization", model="facebook/bart-large-cnn", use_fast=True)
+        print("Successfully loaded facebook/bart-large-cnn model")
+        return summarizer
+    except Exception as e:
+        print(f"Warning: Failed to load the summarization model: {e}")
+        return None
   
 def manual_summarize(text, num_points=4):
     if not sent_tokenize:
@@ -47,6 +54,7 @@ def generate_thesis_points(abstract_text):
         if not abstract_text or len(abstract_text) < 60:
             return "• No meaningful abstract content found to summarize.\n• The PDF might not contain an abstract section.\n• Try a different thesis."
         manual_points = manual_summarize(abstract_text, num_points=4)
+        summarizer = get_transformer_summarizer()
         if summarizer:
             try:
                 input_length = len(abstract_text.split())
