@@ -14,13 +14,6 @@ export function ThesisBox({ title, author, year, publisher }: ThesisBoxProps) {
     const displayYear = String(year || "").trim() || "Unknown Date";
     const displayPublisher = String(publisher || "").trim() || "Unknown University";
     
-    // console.log("ThesisBox render values (raw data from API):", {
-    //     title: displayTitle,
-    //     author: displayAuthor,
-    //     year: displayYear,
-    //     publisher: displayPublisher
-    // });
-    
     return (
         <View style={styles.thesis}>    
           <Text style={styles.thesisTitle} numberOfLines={2} ellipsizeMode="tail">
