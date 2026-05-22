@@ -6,7 +6,7 @@ import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
 import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
-import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
+import { deduplicate } from "./providers/helpers.js";
 import { uniCodes, validUniCodes } from "./config/universities.js";
 import { createThesisEntry, findThesisByLink } from "./database/services/thesisService.js";
 import { analyzeDecisionSource } from "./openAiDecision.js";
@@ -96,11 +96,9 @@ app.get("/uni/:uni", async (req, res) => {
 
         const thesesWithScores = filtered.map((t) => {
             const thesis = t.thesis || {};
-            const link = thesis.link || resolveThesisLink(thesis.handle, thesis.universityCode);
-            const thesisWithLink = { ...thesis, link };
-            const scoreData = calculateNokiaCollaborationScoreByRules(thesisWithLink);
+            const scoreData = calculateNokiaCollaborationScoreByRules(thesis.link);
             return {
-                thesis: thesisWithLink,
+                thesis: thesis,
                 _nokiaScore: scoreData._nokiaScore,
                 _nokiaRelevance: scoreData._nokiaRelevance,
                 _nokiaReasons: scoreData._nokiaReasons
@@ -185,6 +183,7 @@ app.get("/single-thesis/:handle", async (req, res) => {
         
         // Fetch the HTML content of the thesis page
         const response = await axios.get(fullThesisUrl, {
+          timeout: 15000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
