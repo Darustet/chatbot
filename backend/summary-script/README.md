@@ -2,94 +2,83 @@
 
 This module provides AI-powered summarization and ML classification support for university theses.
 
-## 📁 Folder Structure
+##  Folder Structure
 
 ```
 summary-script/
-├── providers/                      # University-specific thesis data fetchers
-│   ├── __init__.py                 # Provider registry (maps university codes to providers)
-│   ├── aalto_provider.py           # Aalto University (REST API)
-│   ├── helda_provider.py           # Helda University (REST API)
-│   ├── non_api_repo_provider.py    # Non-API repository provider (opens an HTML page to locate the abstract text)
-│   └── theseus_provider.py         # Theseus platform (PDF downloads)
-│   ├── oulurepository_provider.py  # Oulu repository provider (provide the base URL)
-│   ├── theseus_provider.py         # Theseus repository provider (provide the base URL)
-│   └── trepo_provider.py           # Tampere repository provider (provide the base URL)
-├── utils/                          # Shared utilities (university-agnostic)
-│   ├── __init__.py
-│   └── summarizer.py               # AI summarization logic (BART transformer + fallback)
-├── app.py                          # Flask server entry point
-└── requirements.txt                # Python dependencies
+├── providers/                # University-specific thesis data fetchers
+│   ├── __init__.py           # Provider registry (maps university codes to providers)
+│   ├── repo_provider.py      # Repository provider (builds thesis page URLs and retrieves abstracts from the database)
+│   ├── summarizer.py         # AI summarization logic (BART transformer with fallback)
+├── app.py                    # Flask server entry point
+└── requirements.txt          # Python dependencies
 ```
 
-## 🔄 How It Works
-
+## How It Works
 ### Data Flow
-
 ```
 University Thesis ID
     ↓
 get_provider(uni_code)  [providers/__init__.py]
     ↓
-provider.summarize(thesis_id)
-    ├─ fetch_abstract()  [provider-specific]
-    └─ generate_thesis_points()  [from utils/summarizer.py]
-    ↓
-Return: Summary points (4 bullet points)
+provider.summarize(thesis_key)  [providers/repo_provider.py]
+    ├─ _build_handle_page_url(thesis_key)
+    ├─ subprocess.run(["node", RUNNER_PATH, page_url])
+    │    └─ Fetch abstract from database using page_url
+    └─ getSummarize(abstract_text)  [providers/summarizer.py]
+         └─ Generate 4 summary bullet points
+
+Return:
+{
+    "summary": "...",
+    "Abstract": "...",
+    "page_url": "..."
+}
 ```
 
 ### Example
+
+
 
 ```python
 from providers import get_provider
 
 # Fetch provider for Aalto
-provider = get_provider('AALTO')
+provider = get_provider("AALTO")
 
 # Summarize an Aalto thesis
-result = provider.summarize(thesis_id='12345')
-# Returns: {"status": "success", "summary": "• Point 1\n• Point 2\n..."}
+result = provider.summarize("12345")
+
+# Returns:
+# {
+#     "summary": "• Point 1\n• Point 2\n...",
+#     "Abstract": "Full abstract text from the thesis...",
+#     "page_url": "https://aaltodoc.aalto.fi/handle/12345"
+# }
+
 ```
 
 ## 🏫 Providers
+AALTO      → https://aaltodoc.aalto.fi 
 
-### 1. **Aalto Provider** (`providers/aalto_provider.py`)
+THESEUS    → https://www.theseus.fi
 
-- **Data Source:** REST API (`aaltodoc.aalto.fi`)
-- **Data Fetching:** Queries JSON metadata endpoint
-- **Abstract Extraction:** Prefers English, falls back to Finnish
-- **Use Case:** Fast, doesn't require file downloads
+TREPO      → https://trepo.tuni.fi
 
-### 2. **Helda Provider** (`providers/helda_provider.py`)
+HELDA      → https://helda.helsinki.fi
 
-- **Data Source:** REST API (`helda.helsinki.fi`)
-- **Data Fetching:** Queries JSON metadata endpoint
-- **Abstract Extraction:** Prefers English, falls back to Finnish
-- **Use Case:** Fast, doesn't require file downloads
+OULUREPO   → https://oulurepo.oulu.fi
 
-### 3. **Oulurepo Provider** (`providers/oulurepo_provider.py`)
+LUTPUB     → https://lutpub.lut.fi
 
-- **Data Source:** Oulurepo repository (`oulurepo.oulu.fi`)
-- **Data Fetching:** Opens the thesis HTML page and looks for the abstract text
-- **Abstract Extraction:** Extracts the abstract from HTML meta tags or visible page content
-- **Use Case:** Oulu university theses using Oulurepo
+### Each provider:
 
-### 4. **Theseus Provider** (`providers/theseus_provider.py`)
+- Builds the thesis page URL from a thesis handle/identifier
+- Fetches the abstract from the database
+- Generates AI-based summary bullet points using the summarizer service
 
-- **Data Source:** Theseus platform (`theseus.fi`)
 
-- **Data Fetching:** Opens the thesis HTML page and looks for the abstract text
-- **Abstract Extraction:** Extracts the abstract from HTML meta tags or visible page content
-- **Use Case:** Finnish UAS theses using Theseus
-
-### 5. **Trepo Provider** (`providers/trepo_provider.py`)
-
-- **Data Source:** TREPO repository (`trepo.tuni.fi`)
-- **Data Fetching:** Opens the thesis HTML page and looks for the abstract text
-- **Abstract Extraction:** Extracts the abstract from HTML meta tags or visible page content
-- **Use Case:** Tampere University theses stored in Trepo
-
-## 🧠 Summarization Engine (`utils/summarizer.py`)
+##  Summarization Engine (`utils/summarizer.py`)
 
 Two-tier approach:
 
@@ -105,7 +94,7 @@ Two-tier approach:
 
 **Flow:** Transformer → Manual summary → Error messages
 
-## 🌐 API Endpoints
+##  API Endpoints
 
 ### `GET /ping`
 
@@ -118,61 +107,3 @@ Response:
   "status": "ok"
 }
 ```
-
-### `GET /ml-ready`
-
-Diagnostic endpoint for ML inference readiness. Useful for troubleshooting environment and model path issues.
-
-Response fields include:
-
-- `python_executable`
-- `python_version`
-- `cwd`
-- `model_path`
-- `model_exists`
-- `sklearn_ok`
-- `sklearn_version`
-- `sklearn_error`
-
-Example:
-
-```json
-{
-  "python_executable": "...\\.venv\\Scripts\\python.exe",
-  "model_exists": true,
-  "sklearn_ok": true,
-  "sklearn_version": "1.8.0"
-}
-```
-
-### `POST /classify-thesis`
-
-Returns ML probability that a thesis belongs to the collaboration class.
-
-Request body:
-
-```json
-{
-  "text": "Thesis title and abstract text"
-}
-```
-
-Success response:
-
-```json
-{
-  "probability": 0.7342
-}
-```
-
-Error behavior:
-
-- `400`: missing `text` field
-- `503`: model missing or dependency missing (for example `sklearn`)
-- `500`: unexpected runtime failure
-
-## 🧩 Integration Notes
-
-- The classification model is loaded from `backend/data/exports/tfidf_model.pkl`.
-- This service returns ML probability only for `/classify-thesis`.
-- Thresholding and hybrid decision logic (`NOKIA_COLLABORATION` / `AMBIGUOUS` / `NO_INDICATION_OF_COLLABORATION`) are applied in Node backend route `backend/routes/admin.js`.

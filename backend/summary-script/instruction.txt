@@ -8,24 +8,12 @@ py -m venv .venv
 ## install dependencies
 pip install -r requirements.txt
 
-## on downloads.py, comment out the following line (about line 17-):
-#nltk.data.find('tokenizers/punkt_tab')
-# nltk.download('punkt_tab') 
-
-
 ## Set value for HF_ENDPOINT and HUGGINGFACE_HUB_BASE_URL environment variables
 .\set_env_vars.bat
-
-## Run the download script
-py downloads.py
 
 ## To run downloads.py again in the future, just navigate to download-script folder, activate the virtual environment and run the script
 ## Activate the virtual environment 
 .venv\Scripts\activate
-## Run the download script
-py downloads.py
-
-
 
 Note:
 * I have changed the content of requirements.txt

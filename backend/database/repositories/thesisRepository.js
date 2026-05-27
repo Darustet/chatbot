@@ -20,6 +20,16 @@ const getThesisByLink = (link) => {
     .get(link) || null;
 };
 
+const getAbstractByLink = (link) => {
+  const result = db
+    .prepare('SELECT abstract_text FROM theses WHERE link = ?')
+    .get(link);
+  if (!result) {
+    throw new Error('Thesis not found');
+  }
+  return result.abstract_text;
+}
+
 const createThesis = (thesis) => {
   const stmt = db
   .prepare(`
@@ -111,6 +121,7 @@ export {
   getAllTheses, 
   getThesisById,
   getThesisByLink,
+  getAbstractByLink,
   createThesis, 
   updateThesis, 
   deleteThesis

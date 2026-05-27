@@ -2,6 +2,7 @@ import {
 	getAllTheses,
 	getThesisById,
 	getThesisByLink,
+	getAbstractByLink,
 	createThesis,
 	updateThesis,
 	deleteThesis
@@ -91,6 +92,7 @@ const listTheses = () => getAllTheses();
 
 const findThesisById = (id) => getThesisById(id);
 const findThesisByLink = (link) => getThesisByLink(link);
+const findAbstractByLink = (link) => getAbstractByLink(link);
 
 const createThesisEntry = (payload) => {
 	const thesis = normalizeThesisPayload(payload);
@@ -108,6 +110,7 @@ export {
 	listTheses,
 	findThesisById,
 	findThesisByLink,
+	findAbstractByLink,
 	createThesisEntry,
 	updateThesisEntry,
 	deleteThesisEntry,
