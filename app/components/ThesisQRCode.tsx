@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, linking } from 'react-native';
+import { View, Text, StyleSheet, Linking } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 interface ThesisQRCodeProps {
