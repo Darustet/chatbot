@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, linking } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 interface ThesisQRCodeProps {
@@ -50,7 +50,11 @@ export const ThesisQRCode = ({ handle, universityCode, size = 150 }: ThesisQRCod
   return (
     <View style={styles.qrContainer}>
       <QRCode value={thesisUrl} size={size} />
-      <Text style={styles.urlText}>{thesisUrl}</Text>
+      <Text style={styles.urlText}
+        onPress={() => Linking.openURL(thesisUrl)}
+      >
+        {thesisUrl}
+      </Text>
     </View>
   );
 };
@@ -66,5 +70,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
-  }
+  },
+  urlText: {
+  marginTop: 10,
+  fontSize: 14,
+  color: '#007AFF',
+  textAlign: 'center',
+  textDecorationLine: 'underline',
+  },
 });
