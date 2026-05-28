@@ -44,9 +44,7 @@ export default function SingleThesis() {
     }
   }, [handle]);
 
-
-  // Improve the fetchThesisSummary function to handle various server configurations
-  const fetchThesisSummary = async (forceRetry = false) => {
+  const fetchThesisSummary = async () => {
     if (!handle) {
       setSummaryError("No thesis handle provided");
       setSummary(null);
@@ -186,6 +184,37 @@ export default function SingleThesis() {
             <ActivityIndicator size="large" color="#0000ff" />
             <Text style={styles.loadingText}>Loading summary...</Text>
           </View>
+        ) : summary ? (
+          <View>
+            {summaryError && (
+              <Text style={styles.warningText}>{summaryError}</Text>
+            )}
+
+            <ThesisSummary summary={summary} title={String(title)} />
+
+            {retryCount > 0 && (
+              <Text style={styles.retryNote}>
+                Note: Retrieved after {retryCount} retries
+              </Text>
+            )}
+
+            {summaryError && (
+              <TouchableOpacity
+                style={styles.debugButton}
+                onPress={() => {
+                  Alert.alert(
+                    "Raw Summary Data",
+                    typeof summary === "string"
+                      ? summary
+                      : JSON.stringify(summary),
+                    [{ text: "OK" }]
+                  );
+                }}
+              >
+                <Text style={styles.debugButtonText}>View Summary</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         ) : summaryError ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
@@ -217,31 +246,12 @@ export default function SingleThesis() {
               </TouchableOpacity>
             </View>
           </View>
-        ) : summary ? (
-          <View>
-            <ThesisSummary summary={summary} title={String(title)} />
-            {retryCount > 0 && (
-              <Text style={styles.retryNote}>Note: Retrieved after {retryCount} retries</Text>
-            )}
-            <TouchableOpacity 
-              style={styles.debugButton}
-              onPress={() => {
-                Alert.alert(
-                  "Raw Summary Data",
-                  typeof summary === 'string' ? summary : JSON.stringify(summary),
-                  [{ text: "OK" }]
-                );
-              }}
-            >
-              <Text style={styles.debugButtonText}>View Summary Data</Text>
-            </TouchableOpacity>
-          </View>
         ) : (
           <View style={styles.noSummaryContainer}>
             <Text style={styles.noSummaryText}>No summary available for this thesis.</Text>
             <TouchableOpacity
-              style={[styles.configButton, {marginTop: 10}]}
-              onPress={() => fetchThesisSummary(true)}
+              style={[styles.configButton, { marginTop: 10 }]}
+              onPress={fetchThesisSummary}
             >
               <Text style={styles.configButtonText}>Force Retry</Text>
             </TouchableOpacity>
@@ -349,6 +359,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#cc0000',
     marginBottom: 10,
+  },
+  warningText: {
+    color: "#ff9800",
+    marginBottom: 10,
+    textAlign: "center",
+    fontStyle: "italic",
   },
   errorHint: {
     fontStyle: 'italic',
