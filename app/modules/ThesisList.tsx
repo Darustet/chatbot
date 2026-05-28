@@ -6,7 +6,7 @@ import { Hoverable } from "react-native-web-hover";
 import { config } from "../config";
 import { DownloadCsv } from "../components/DownloadCsv";
 import { SelectBox } from "../components/UI/SelectBox";
-import { DropdownBox } from "../components/UI/DropdownBox";
+import { UniversitySelectDropdown, YearRangeDropdown } from "../components/UI/DropdownBox";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
@@ -466,7 +466,7 @@ export default function ThesisList() {
               setDropdownOpen={setDropdownOpen}
             />
 
-            <DropdownBox
+            <UniversitySelectDropdown
               dropdownOpen={dropdownOpen}
               hoveredGroup={hoveredGroup}
               setHoveredGroup={setHoveredGroup}
@@ -485,21 +485,13 @@ export default function ThesisList() {
             onChangeText={text => setSelectedAuthor(text)}
           />
 
-          <TextInput
-            style={styles.inputField}
-            placeholder="From Year..."
-            placeholderTextColor="#999"
-            keyboardType="numeric"
-            onChangeText={text => setStartYear(text)}
+          <YearRangeDropdown
+            startYear={startYear}
+            endYear={endYear}
+            setStartYear={setStartYear}
+            setEndYear={setEndYear}
           />
 
-          <TextInput
-            style={styles.inputField}
-            placeholder="To Year..."
-            placeholderTextColor="#999"
-            keyboardType="numeric"
-            onChangeText={text => setEndYear(text)}
-          />
         </View>
 
         <View style={styles.buttonRow}>
