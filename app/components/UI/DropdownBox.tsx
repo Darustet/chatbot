@@ -264,6 +264,7 @@ const styles = StyleSheet.create({
   yearDropdownBox: {
     flex: 1,
     position: "relative",
+    marginLeft:10,
   },
   yearInputField: {
     flex: 1,
