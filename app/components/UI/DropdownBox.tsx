@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState } from "react";
 
-export function DropdownBox({
+export function UniversitySelectDropdown({
   dropdownOpen,
   hoveredGroup,
   setHoveredGroup,
@@ -11,8 +12,7 @@ export function DropdownBox({
   selectUni,
 }: any) {
   const isSelected = (code: string) =>
-  selectedItems.some((item: any) => item.code === code);
-
+    selectedItems.some((item: any) => item.code === code);
 
   const allRealOptions = [...uasOptions, ...universityOptions];
 
@@ -103,6 +103,107 @@ export function DropdownBox({
   );
 }
 
+export function YearRangeDropdown({
+  startYear,
+  endYear,
+  setStartYear,
+  setEndYear,
+}: any) {
+  const currentYear = new Date().getFullYear();
+  const yearMin = 2023;
+
+  const years = Array.from(
+    { length: currentYear - yearMin + 1 },
+    (_, i) => yearMin + i
+  );
+
+  const [dropdownOpen, setDropdownOpen] = useState<"start" | "end" | null>(null);
+
+  const renderDropdown = (type: "start" | "end") => (
+    <View style={styles.customDropdown}>
+
+      <TouchableOpacity
+        style={styles.dropdownMainItem}
+        onPress={() => {
+          if (type === "start") {
+            setStartYear("");
+          } else {
+            setEndYear("");
+          }
+          setDropdownOpen(null);
+        }}
+      >
+        <Text style={[styles.uniSelectorText, { color: "#999" },]}>Clear</Text>
+      </TouchableOpacity>
+
+      {years.map((year) => (
+        <TouchableOpacity
+          key={year}
+          style={styles.dropdownMainItem}
+          onPress={() => {
+            if (type === "start") {
+              setStartYear(String(year));
+              if (endYear && year > Number(endYear)) {
+                setEndYear("");
+              }
+            } else {
+              setEndYear(String(year));
+              if (startYear && year < Number(startYear)) {
+                setStartYear("");
+              }
+            }
+            setDropdownOpen(null);
+          }}
+        >
+          <Text style={styles.uniSelectorText}>{year}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  return (
+    <View style={styles.yearRangeWrapper}>
+      <View style={styles.yearDropdownBox}>
+        <TouchableOpacity
+          style={styles.yearInputField}
+          onPress={() =>
+            setDropdownOpen(dropdownOpen === "start" ? null : "start")
+          }
+        >
+          <Text style={[
+              styles.uniSelectorText,
+              {color: startYear ? "#000" : "#999",},
+            ]}
+          >
+            {startYear ? `Start Year: ${startYear}` : "Start Year"}
+          </Text>
+        </TouchableOpacity>
+
+        {dropdownOpen === "start" && renderDropdown("start")}
+      </View>
+
+      <View style={styles.yearDropdownBox}>
+        <TouchableOpacity
+          style={styles.yearInputField}
+          onPress={() =>
+            setDropdownOpen(dropdownOpen === "end" ? null : "end")
+          }
+        >
+          <Text style={[
+              styles.uniSelectorText,
+              {color: startYear ? "#000" : "#999",},
+            ]}
+          >
+            {endYear ? `End Year: ${endYear}` : "End Year"}
+          </Text>
+        </TouchableOpacity>
+
+        {dropdownOpen === "end" && renderDropdown("end")}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   customDropdown: {
     position: "absolute",
@@ -153,6 +254,24 @@ const styles = StyleSheet.create({
     width: 20,
   },
   uniSelectorText: {
-    fontSize: 14,
+    fontSize: 16,
+  },
+  yearRangeWrapper: {
+    flexDirection: "row",
+    gap: 2,
+    flex: 1,
+  },
+  yearDropdownBox: {
+    flex: 1,
+    position: "relative",
+  },
+  yearInputField: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "#fff",
+    justifyContent: "center",
   },
 });
