@@ -1,4 +1,4 @@
-import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity, Modal, Pressable, } from "react-native";
+import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity } from "react-native";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
@@ -597,6 +597,9 @@ export default function ThesisList() {
               // Extract the Nokia score
               const nokiaScore = getItemScore(item);
               const scoreDisplay = nokiaScore >= 0 ? nokiaScore : "-";
+              const displayRelevance = nokiaRelevance
+                .replaceAll("_", " ")
+                .replace("NO INDICATION OF COLLABORATION", "NO COLLABORATION");
 
               // Define relevance indicator color
               let relevanceColor = "#95a5a6"; // Gray for not scored / unknown
@@ -813,21 +816,28 @@ const styles = StyleSheet.create({
     position: 'relative',
     margin: 10,
     flex: 1,
-    maxWidth: "30%"
+    maxWidth: "33%"
   },
   relevanceIndicator: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    minWidth: 180,
+    top: -10,
+    left: '60%',
+    transform: [{ translateX: -80 }],
     paddingVertical: 0,
     paddingHorizontal: 12,
     borderRadius: 8,
-    zIndex: 2
+    zIndex: 2,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   relevanceText: {
     color: 'white',
+    padding: 2,
     fontSize: 12,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    textAlign: 'center',
+    flexWrap: 'nowrap'
   },
   customDropdownWrapper: {
     position: "relative",
