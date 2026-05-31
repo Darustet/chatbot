@@ -1,4 +1,4 @@
-import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity } from "react-native";
+import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity, Modal, Pressable, } from "react-native";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
@@ -7,6 +7,8 @@ import { config } from "../config";
 import { DownloadCsv } from "../components/DownloadCsv";
 import { SelectBox } from "../components/UI/SelectBox";
 import { DropdownBox } from "../components/UI/DropdownBox";
+import  SingleThesis from "./SingleThesis";
+import ModalWindow from "../components/UI/ModalWindow";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
@@ -85,6 +87,7 @@ const API_BASE_URL = config.API_BASE_URL;
 const RPP = 2;
 
 export default function ThesisList() {
+  const [open, setOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
@@ -614,45 +617,36 @@ export default function ThesisList() {
               }
 
               return (
-                <Link
-                  href={{
-                    pathname: "/modules/SingleThesis",
-                    params: {
-                      handle: getValidHandle(item),
-                      thesisId,
-                      title,
-                      author,
-                      year,
-                      publisher,
-                      universityCode
-                    }
-                  }}
-                >
-                  <View style={styles.thesisCardWrapper}>
-                    {/* Add Nokia relevance indicator */}
-                    <View style={[styles.relevanceIndicator, { backgroundColor: relevanceColor }]}>
-                      <Text style={styles.relevanceText}>
+                <>
+                  <TouchableOpacity onPress={() => setOpen(true)}>
+                    <View style={styles.thesisCardWrapper}>
+                      <View style={[styles.relevanceIndicator, { backgroundColor: relevanceColor }]}>
+                        <Text style={styles.relevanceText}>
                           {nokiaRelevance}
-                      </Text>
-                    </View>
+                        </Text>
+                      </View>
 
-                    <ThesisBox
+                      <ThesisBox
+                        title={title}
+                        author={author}
+                        year={year}
+                        publisher={publisher}
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  <ModalWindow visible={open} onClose={() => setOpen(false)}>
+                    <SingleThesis
+                      handle={getValidHandle(item)}
+                      thesisId={thesisId}
                       title={title}
                       author={author}
                       year={year}
                       publisher={publisher}
+                      universityCode={universityCode}
                     />
-                    <Hoverable style={styles.singleThesis}>
-                      {({ hovered }) => (
-                        hovered && (
-                          <View style={styles.hovered}>
-                            <Text style={styles.hoveredText}>Click to view</Text>
-                          </View>
-                        )
-                      )}
-                    </Hoverable>
-                  </View>
-                </Link>
+                  </ModalWindow>
+                </>
               );
             }}
           />
