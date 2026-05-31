@@ -5,9 +5,9 @@ import { ThesisSummary } from "../components/ThesisSummary";
 import { ThesisQRCode } from "../components/ThesisQRCode";
 import { getThesisSummary, API_BASE_URL, setApiBaseUrl, getTestSummaryDirect } from "../utils/api";
 
-export default function SingleThesis() {
+export default function SingleThesis(props:any) {
   const params = useLocalSearchParams();
-  const { handle, thesisId, title, author, year, publisher, universityCode  } = params;
+  const { handle, thesisId, title, author, year, publisher, universityCode  } = {...params, ...props};
   console.log(universityCode, thesisId);
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(false);

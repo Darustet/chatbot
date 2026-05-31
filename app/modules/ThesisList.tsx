@@ -1,4 +1,4 @@
-import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity } from "react-native";
+import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity, Modal, Pressable, } from "react-native";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
@@ -6,7 +6,9 @@ import { Hoverable } from "react-native-web-hover";
 import { config } from "../config";
 import { DownloadCsv } from "../components/DownloadCsv";
 import { SelectBox } from "../components/UI/SelectBox";
-import { UniversitySelectDropdown, YearRangeDropdown } from "../components/UI/DropdownBox";
+import { DropdownBox } from "../components/UI/DropdownBox";
+import  SingleThesis from "./SingleThesis";
+import ModalWindow from "../components/UI/ModalWindow";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
@@ -85,6 +87,7 @@ const API_BASE_URL = config.API_BASE_URL;
 const RPP = 2;
 
 export default function ThesisList() {
+  const [open, setOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
@@ -466,7 +469,7 @@ export default function ThesisList() {
               setDropdownOpen={setDropdownOpen}
             />
 
-            <UniversitySelectDropdown
+            <DropdownBox
               dropdownOpen={dropdownOpen}
               hoveredGroup={hoveredGroup}
               setHoveredGroup={setHoveredGroup}
@@ -485,13 +488,21 @@ export default function ThesisList() {
             onChangeText={text => setSelectedAuthor(text)}
           />
 
-          <YearRangeDropdown
-            startYear={startYear}
-            endYear={endYear}
-            setStartYear={setStartYear}
-            setEndYear={setEndYear}
+          <TextInput
+            style={styles.inputField}
+            placeholder="From Year..."
+            placeholderTextColor="#999"
+            keyboardType="numeric"
+            onChangeText={text => setStartYear(text)}
           />
 
+          <TextInput
+            style={styles.inputField}
+            placeholder="To Year..."
+            placeholderTextColor="#999"
+            keyboardType="numeric"
+            onChangeText={text => setEndYear(text)}
+          />
         </View>
 
         <View style={styles.buttonRow}>
@@ -594,9 +605,6 @@ export default function ThesisList() {
               // Extract the Nokia score
               const nokiaScore = getItemScore(item);
               const scoreDisplay = nokiaScore >= 0 ? nokiaScore : "-";
-              const displayRelevance = nokiaRelevance
-                .replaceAll("_", " ")
-                .replace("NO INDICATION OF COLLABORATION", "NO COLLABORATION");
 
               // Define relevance indicator color
               let relevanceColor = "#95a5a6"; // Gray for not scored / unknown
@@ -609,45 +617,36 @@ export default function ThesisList() {
               }
 
               return (
-                <Link
-                  href={{
-                    pathname: "/modules/SingleThesis",
-                    params: {
-                      handle: getValidHandle(item),
-                      thesisId,
-                      title,
-                      author,
-                      year,
-                      publisher,
-                      universityCode
-                    }
-                  }}
-                >
-                  <View style={styles.thesisCardWrapper}>
-                    {/* Add Nokia relevance indicator */}
-                    <View style={[styles.relevanceIndicator, { backgroundColor: relevanceColor }]}>
-                      <Text style={styles.relevanceText}>
-                          {displayRelevance}
-                      </Text>
-                    </View>
+                <>
+                  <TouchableOpacity onPress={() => setOpen(true)}>
+                    <View style={styles.thesisCardWrapper}>
+                      <View style={[styles.relevanceIndicator, { backgroundColor: relevanceColor }]}>
+                        <Text style={styles.relevanceText}>
+                          {nokiaRelevance}
+                        </Text>
+                      </View>
 
-                    <ThesisBox
+                      <ThesisBox
+                        title={title}
+                        author={author}
+                        year={year}
+                        publisher={publisher}
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  <ModalWindow visible={open} onClose={() => setOpen(false)}>
+                    <SingleThesis
+                      handle={getValidHandle(item)}
+                      thesisId={thesisId}
                       title={title}
                       author={author}
                       year={year}
                       publisher={publisher}
+                      universityCode={universityCode}
                     />
-                    <Hoverable style={styles.singleThesis}>
-                      {({ hovered }) => (
-                        hovered && (
-                          <View style={styles.hovered}>
-                            <Text style={styles.hoveredText}>Click to view</Text>
-                          </View>
-                        )
-                      )}
-                    </Hoverable>
-                  </View>
-                </Link>
+                  </ModalWindow>
+                </>
               );
             }}
           />
@@ -822,29 +821,21 @@ const styles = StyleSheet.create({
     position: 'relative',
     margin: 10,
     flex: 1,
-    maxWidth: "33%"
+    maxWidth: "30%"
   },
   relevanceIndicator: {
     position: 'absolute',
-    minWidth: 180,
-    top: -10,
-    left: '60%',
-    transform: [{ translateX: -80 }],
+    top: 0,
+    right: 0,
     paddingVertical: 0,
     paddingHorizontal: 12,
     borderRadius: 8,
-    zIndex: 2,
-    alignItems: 'center',
-    justifyContent: 'center'
+    zIndex: 2
   },
-
   relevanceText: {
     color: 'white',
-    padding: 2,
     fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    flexWrap: 'nowrap'
+    fontWeight: 'bold'
   },
   customDropdownWrapper: {
     position: "relative",
