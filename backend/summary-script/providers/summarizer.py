@@ -87,18 +87,3 @@ def generate_thesis_points(abstract_text):
     except Exception as e:
         print(f"Error in summarization process: {e}")
         return "• Could not generate summary points.\n• The thesis might be in a format that's difficult to process.\n• Try a different thesis."
-
-def getSummarize(abstract_text):
-    try:
-        print(f"\n====== SUMMARIZATION START ======")
-        print(f"Abstract text length: {len(abstract_text)} chars")
-        print(f"Abstract text preview: {abstract_text[:500]}..." if len(abstract_text) > 500 else abstract_text)
-
-        summary = generate_thesis_points(abstract_text)
-
-        print(f"Generated Summary:\n{summary}")
-        return summary
-
-    except Exception as e:
-        print(f"Error in summarization process: {e}")
-        return "• Could not generate summary points.\n• The thesis might be in a format that's difficult to process.\n• Try a different thesis."

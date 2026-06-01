@@ -1,6 +1,6 @@
 import re
 import urllib.parse
-from .summarizer import getSummarize
+from .summarizer import generate_thesis_points
 import subprocess
 import os
 
@@ -68,7 +68,13 @@ class RepoProvider:
             if result.returncode != 0:
                 raise RuntimeError(result.stderr)
 
-            abstract_text = result.stdout.strip()
+            raw_output = result.stdout
+
+            abstract_text = "\n".join(
+                line for line in raw_output.splitlines()
+                if not line.startswith("◇ injected env")
+                and not line.startswith("MongoDB connected")
+            ).strip()
 
             if not abstract_text:
                 return {
@@ -79,13 +85,24 @@ class RepoProvider:
             print(f"EXTRACTED ABSTRACT ({len(abstract_text)} chars)")
             print(abstract_text[:500] + "..." if len(abstract_text) > 500 else abstract_text)
 
-            summary = getSummarize(abstract_text)
+            print("\n====== SUMMARIZATION START ======")
+            print(f"Abstract text length: {len(abstract_text)} chars")
+            print(
+                f"Abstract text preview: {abstract_text[:100]}..."
+                if len(abstract_text) > 100
+                else abstract_text
+            )
+
+            summary = generate_thesis_points(abstract_text)
+
+            print(f"Generated Summary:\n{summary}")
 
             return {
-                "summary": summary,
                 "Abstract": abstract_text,
                 "page_url": page_url,
+                "summary": summary
             }
+
         except Exception as e:
             print(f"Error in {self.repo_name.lower()}_provider.summarize: {e}")
             return {

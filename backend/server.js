@@ -2,7 +2,7 @@ import axios from "axios";
 import express from "express";
 import dotenv from "dotenv";
 import * as cheerio from "cheerio";
-import mongoose from "mongoose";
+import connectDB from "./database/config/db.js";
 import adminRoutes from "./routes/admin.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import { getProvider } from "./providers/index.js";
@@ -98,8 +98,7 @@ app.get("/uni/:uni", async (req, res) => {
         const thesesWithScores = filtered.map((t) => {
             const thesis = t.thesis || {};
             const scoreData = calculateNokiaCollaborationScoreByRules(thesis);
-
-            console.log(thesis.link, "scoreData:", scoreData);
+            //console.log(thesis.link, "scoreData:", scoreData);
             return {
                 thesis: thesis,
                 _nokiaScore: scoreData._nokiaScore,
@@ -220,9 +219,23 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-    console.log("🚀 Server is running on port 3000");
-    console.log("📊 Admin panel available at /api/admin");
-    console.log("🤖 Chatbot API available at /api/chatbot");
-    console.log("🏥 Health check available at /health");
-});
+const startServer = async () => {
+  try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error("Missing MONGODB_URI in .env");
+    }
+    await connectDB();
+
+    app.listen(3000, () => {
+      console.log("🚀 Server is running on port 3000");
+      console.log("📊 Admin panel available at /api/admin");
+      console.log("🤖 Chatbot API available at /api/chatbot");
+      console.log("🏥 Health check available at /health");
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error?.message || error);
+    process.exit(1);
+  }
+};
+
+startServer();

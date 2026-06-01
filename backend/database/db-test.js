@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
 import Thesis from './models/thesis.js';
-import {updateThesisEntry, deleteThesisEntry, findThesisByLink } from './services/thesisService.js';
+import {updateThesisEntry, deleteThesisEntry, findThesisByLink, findAbstractByLink } from './services/thesisService.js';
 
 dotenv.config();
 
@@ -15,6 +15,9 @@ const connectDB = async () => {
     const thesisCount = await Thesis.countDocuments();
     console.log(`Theses in database: ${thesisCount}`);
 
+    const abstract = await findAbstractByLink('https://www.theseus.fi/handle/10024/874009');
+    console.log('Abstract text:', abstract);
+/*
     if (thesisCount === 0) {
       await Thesis.create({
         title: 'Muutosjohtaminen: organisaation toimivan muuton edellytykset',
@@ -42,7 +45,7 @@ const connectDB = async () => {
       console.log('Database already contains theses.');
     }
 
- /*
+
     const update = await updateThesisEntry('6a04fd61e885163a6fce59ca', {
       otitle: 'Muutosjohtaminen: organisaation toimivan muuton edellytykset',
         author: 'Tolonen, Marja',
@@ -57,21 +60,22 @@ const connectDB = async () => {
                       Kyselyyn vastasi 185 henkilöä ja sen mukaan suurin osa vierailijoista huomioi piha-alueet aina tai usein. Noin 60 prosenttia valitsisi golfkentän, jolla on runsaasti istutuksia, ja noin 39 prosenttia golfkentän, jolla on hillitysti istutuksia.
                       Johtopäätökseksi tuli, että piha-alueilla on rooli yrityksen vetovoimaan viihtyvyyden kannalta.`,
         rule_score: 13,
+        rule_label: NOKIA_COLLABORATION',
         rule_reasons: 'Nokia mentioned',
         openAI_decision: 'no',
         openAI_evidence:
           'The thesis was commissioned by Nokia River Golf, which is a golf company, not Nokia Corporation.'
 
     });
-    */
+*/
 
   //  await deleteThesisEntry('6a04fd61e885163a6fce59ca');
 
-    const allTheses = await Thesis.find();
-    console.log('All theses:', allTheses);
+    //const allTheses = await Thesis.find();
+    //console.log('All theses:', allTheses);
 
-    const thesisByLink = await findThesisByLink('https://www.theseus.fi/handle/10024/830287');
-    console.log('Thesis by link:', thesisByLink);
+   //const thesisByLink = await findThesisByLink('https://www.theseus.fi/handle/10024/830287');
+    //console.log('Thesis by link:', thesisByLink);
 
 
     await mongoose.connection.close();

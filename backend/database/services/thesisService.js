@@ -2,6 +2,7 @@ import {
   getAllTheses,
   getThesisById,
   getThesisByLink,
+  getAbstractByLink,
   createThesis,
   updateThesis,
   deleteThesis
@@ -55,6 +56,8 @@ const findThesisById = async (id) => await getThesisById(id);
 
 const findThesisByLink = async (link) => await getThesisByLink(link);
 
+const findAbstractByLink = async (link) => await getAbstractByLink(link);
+
 const createThesisEntry = async (payload) => {
   const thesis = normalizeThesisPayload(payload);
   return await createThesis(thesis);
@@ -71,6 +74,7 @@ export {
   listTheses,
   findThesisById,
   findThesisByLink,
+  findAbstractByLink,
   createThesisEntry,
   updateThesisEntry,
   deleteThesisEntry,

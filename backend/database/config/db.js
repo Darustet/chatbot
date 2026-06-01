@@ -1,17 +1,18 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 
-ddotenv.config({ path: '../.env' });
+dotenv.config({ path: '../.env' });
 
 const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-
-    console.log("MongoDB connected");
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
+  if (!process.env.MONGODB_URI) {
+    throw new Error("Missing MONGODB_URI");
   }
+
+  await mongoose.connect(process.env.MONGODB_URI);
+
+  // Use stderr instead of stdout so this message does not get included
+// in the abstract text returned by runner.js.
+  console.error("MongoDB connected");
 };
 
 export default connectDB;

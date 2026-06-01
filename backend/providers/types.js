@@ -1,7 +1,7 @@
 import { resolveThesisLink } from "./helpers.js";
 
 // add optional thesisId to the normalized thesis object
-export function normalizeThesis({ handle, link, thesisId, title, author, year, publisher, universityCode, abstractByLanguage}) {
+export function normalizeThesis({ handle, thesisId, title, author, year, publisher, universityCode, abstractByLanguage}) {
   const link = resolveThesisLink(handle, universityCode);
   const normalizedYear = year
     ? String(year).slice(0, 4)

@@ -12,6 +12,11 @@ const getThesisByLink = async (link) => {
   return await Thesis.findOne({ link });
 };
 
+const getAbstractByLink = async (link) => {
+  const thesis = await Thesis.findOne({ link }, 'abstract_text');
+  return thesis ? thesis.abstract_text : null;
+}
+
 const createThesis = async (thesis) => {
   return await Thesis.create(thesis);
 };
@@ -31,6 +36,7 @@ export {
   getAllTheses,
   getThesisById,
   getThesisByLink,
+  getAbstractByLink,
   createThesis,
   updateThesis,
   deleteThesis

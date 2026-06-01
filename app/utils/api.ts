@@ -173,7 +173,7 @@ export async function fetchFromApi(endpoint: string, options = {}) {
     
     // Add robust timeout handling
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
     
     const response = await fetch(url, {
       method: 'GET',
