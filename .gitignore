@@ -40,6 +40,7 @@ backend/theses.sqlite
 backend/data/exports/training_set_reviewed_2.csv
 backend/data/exports/tfidf_training_set.csv
 backend/data/exports/tfidf_training_set.csv
+backend/data/
 
 # IDE
 .idea/
