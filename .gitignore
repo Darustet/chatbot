@@ -40,3 +40,15 @@ backend/theses.sqlite
 backend/data/exports/training_set_reviewed_2.csv
 backend/data/exports/tfidf_training_set.csv
 backend/data/exports/tfidf_training_set.csv
+
+# IDE
+.idea/
+
+# Logs
+*.log
+backend.log
+frontend.log
+python.log
+
+# Python venv
+backend/summary-script/venv/
