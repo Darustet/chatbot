@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { filename, theses, labels, thesisExportView, labelsData, checkLabels } from './db-config.js';
 
-console.log(`Opening SQLite database at: ${filename}`);
+console.error(`Opening SQLite database at: ${filename}`);
 const db = new Database(filename);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
