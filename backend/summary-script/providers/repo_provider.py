@@ -62,8 +62,7 @@ class RepoProvider:
             result = subprocess.run(
                 ["node", RUNNER_PATH, page_url],
                 capture_output=True,
-                text=True,
-                timeout=30,
+                text=True
             )
 
             if result.returncode != 0:
@@ -84,13 +83,6 @@ class RepoProvider:
                 "Abstract": abstract_text,
                 "page_url": page_url,
             }
-
-        except subprocess.TimeoutExpired:
-            return {
-                "error": "Timeout",
-                "message": "Reading the thesis page took too long.",
-            }
-
         except Exception as e:
             print(f"Error in {self.repo_name.lower()}_provider.summarize: {e}")
             return {

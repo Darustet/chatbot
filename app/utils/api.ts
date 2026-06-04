@@ -244,7 +244,7 @@ export async function getThesisSummary(handle: string, universityCode: string, t
     console.log('Summary length:', data?.summary ? data.summary.length : 0);
     console.log('Summary type:', data?.summary ? typeof data.summary : 'N/A');
     console.log('Summary content:', data?.summary);
-    console.error('Full response:', data);
+    console.log('Full response:', data);
     
     return data;
   } catch (error) {
