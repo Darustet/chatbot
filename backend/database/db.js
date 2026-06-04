@@ -16,8 +16,6 @@ const labelsCount = (db.prepare(checkLabels).get()).count;
 if (labelsCount === 0) {
   db.prepare(labelsData).run();
   console.log('Inserted example labels.');
-} else {
-  console.log('Labels table already populated.');
 }
 
 // // TEST

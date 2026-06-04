@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, TextInput, Alert } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ThesisSummary } from "../components/ThesisSummary";
 import { ThesisQRCode } from "../components/ThesisQRCode";
 import { getThesisSummary, API_BASE_URL, setApiBaseUrl, getTestSummaryDirect } from "../utils/api";
 
-export default function SingleThesis(props:any) {
+export function SingleThesis(props:any) {
   const params = useLocalSearchParams();
   const { handle, thesisId, title, author, year, publisher, universityCode  } = {...params, ...props};
   console.log(universityCode, thesisId);
@@ -15,6 +15,8 @@ export default function SingleThesis(props:any) {
   const [showApiConfig, setShowApiConfig] = useState(false);
   const [newApiUrl, setNewApiUrl] = useState(API_BASE_URL);
   const [retryCount, setRetryCount] = useState(0);
+
+  const requestIdRef = useRef(0);
 
   // Format handle for better consistency
   const formattedHandle = useMemo(() => {
@@ -45,6 +47,8 @@ export default function SingleThesis(props:any) {
   }, [handle]);
 
   const fetchThesisSummary = async () => {
+    const requestId = ++requestIdRef.current;
+
     if (!handle) {
       setSummaryError("No thesis handle provided");
       setSummary(null);
@@ -52,6 +56,7 @@ export default function SingleThesis(props:any) {
       return;
     }
 
+    setSummary(null);
     setSummaryLoading(true);
     setSummaryError(null);
 
@@ -108,17 +113,24 @@ export default function SingleThesis(props:any) {
       }
       setRetryCount(prev => prev + 1);
     } finally {
-      setSummaryLoading(false);
+      if (requestId === requestIdRef.current) {
+        setSummaryLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    if (handle) {
-      // Reset retry count
-      setRetryCount(0);
+    requestIdRef.current += 1;
+
+    setSummary(null);
+    setSummaryError(null);
+    setSummaryLoading(false);
+    setRetryCount(0);
+
+    if (handleKey && universityCode) {
       fetchThesisSummary();
     }
-  }, [handle]);
+  }, [handleKey, universityCode, thesisId]);
 
   // Add a button to manually try the test summary endpoint
   const tryTestSummary = async () => {
@@ -133,11 +145,11 @@ export default function SingleThesis(props:any) {
         throw new Error("No summary in test response");
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setSummaryError(`Test summary failed: ${error.message}`);
-      } else {
-        setSummaryError("Test summary failed");
-      }
+      setSummaryError(
+        error instanceof Error
+          ? `Test summary failed: ${error.message}`
+          : "Test summary failed"
+      );
     } finally {
       setSummaryLoading(false);
     }

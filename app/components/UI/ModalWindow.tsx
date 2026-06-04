@@ -6,7 +6,7 @@ interface PopWindowProps {
   children: React.ReactNode;
 }
 
-export default function ModalWindow({
+export function ModalWindow({
   visible,
   onClose,
   children,
