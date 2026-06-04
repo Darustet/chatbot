@@ -8,7 +8,7 @@ interface ThesisQRCodeProps {
   size?: number;
 }
 
-export const ThesisQRCode = ({ handle, universityCode, size = 150 }: ThesisQRCodeProps & { universityCode?: string }) => {
+export const ThesisQRCode = ({ handle, universityCode, size = 80 }: ThesisQRCodeProps & { universityCode?: string }) => {
   console.log(handle, universityCode);
   // Format the handle into a proper URL for the QR code
   const getThesisUrl = (handle: string) => {
@@ -62,7 +62,7 @@ export const ThesisQRCode = ({ handle, universityCode, size = 150 }: ThesisQRCod
 const styles = StyleSheet.create({
   qrContainer: {
     alignItems: 'center',
-    padding: 15,
+    padding: 10,
     marginVertical: 10,
   },
   urlText: {
