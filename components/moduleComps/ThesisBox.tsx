@@ -48,7 +48,7 @@ export function ThesisBox({ title, author, year, publisher }: ThesisBoxProps) {
 
 const styles = StyleSheet.create({
     thesis: {
-        width: 450,
+        width: 420,
         height: 200,
         borderWidth: 1,
         borderRadius: 15,
