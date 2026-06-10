@@ -20,7 +20,7 @@ if (labelsCount === 0) {
 
 // // TEST
 //Show all tables in the database
-//console.log("Tables in database:", db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all());
+console.log("Tables in database:", db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all());
 
 //Delete all rows from theses table (for testing purposes)
 //db.prepare('DELETE FROM theses').run();
