@@ -4,6 +4,7 @@ const link = process.argv[2];
 
 try {
     const result = await findAbstractByLink(link);
+ 
     console.log(result ?? "");
 } catch (error) {
     console.error(error);

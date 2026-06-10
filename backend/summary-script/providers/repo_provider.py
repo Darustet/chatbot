@@ -62,7 +62,9 @@ class RepoProvider:
             result = subprocess.run(
                 ["node", RUNNER_PATH, page_url],
                 capture_output=True,
-                text=True
+                text=True,
+                encoding="utf-8",
+                errors="replace"
             )
 
             if result.returncode != 0:
@@ -75,9 +77,6 @@ class RepoProvider:
                     "error": "No abstract found",
                     "message": "Could not find abstract text from the thesis page.",
                 }
-
-            print(f"EXTRACTED ABSTRACT ({len(abstract_text)} chars)")
-            print(abstract_text[:500] + "..." if len(abstract_text) > 500 else abstract_text)
 
             summary = getSummarize(abstract_text)
 

@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { filename, theses, labels, thesisExportView, labelsData, checkLabels } from './db-config.js';
 
-console.log(`Opening SQLite database at: ${filename}`);
+console.error(`Opening SQLite database at: ${filename}`);
 const db = new Database(filename);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -16,13 +16,11 @@ const labelsCount = (db.prepare(checkLabels).get()).count;
 if (labelsCount === 0) {
   db.prepare(labelsData).run();
   console.log('Inserted example labels.');
-} else {
-  console.log('Labels table already populated.');
 }
 
 // // TEST
 //Show all tables in the database
-//console.log("Tables in database:", db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all());
+console.log("Tables in database:", db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all());
 
 //Delete all rows from theses table (for testing purposes)
 //db.prepare('DELETE FROM theses').run();

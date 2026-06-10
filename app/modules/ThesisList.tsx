@@ -7,6 +7,8 @@ import { config } from "../config";
 import { DownloadCsv } from "../components/DownloadCsv";
 import { SelectBox } from "../components/UI/SelectBox";
 import { UniversitySelectDropdown, YearRangeDropdown } from "../components/UI/DropdownBox";
+import { SingleThesis } from "./SingleThesis";
+import { ModalWindow } from "../components/UI/ModalWindow";
 
 const uniCodes = [
   {"uni": "All", "code": "all"},
@@ -85,6 +87,8 @@ const API_BASE_URL = config.API_BASE_URL;
 const RPP = 2;
 
 export default function ThesisList() {
+  const [open, setOpen] = useState(false);
+  const [selectedThesis, setSelectedThesis] = useState<any | null>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
@@ -608,47 +612,78 @@ export default function ThesisList() {
                 relevanceColor = "#e74c3c"; // Red for low
               }
 
-              return (
-                <Link
-                  href={{
-                    pathname: "/modules/SingleThesis",
-                    params: {
-                      handle: getValidHandle(item),
-                      thesisId,
-                      title,
-                      author,
-                      year,
-                      publisher,
-                      universityCode
-                    }
-                  }}
-                >
-                  <View style={styles.thesisCardWrapper}>
-                    {/* Add Nokia relevance indicator */}
-                    <View style={[styles.relevanceIndicator, { backgroundColor: relevanceColor }]}>
-                      <Text style={styles.relevanceText}>
-                          {displayRelevance}
-                      </Text>
-                    </View>
 
-                    <ThesisBox
-                      title={title}
-                      author={author}
-                      year={year}
-                      publisher={publisher}
-                    />
-                    <Hoverable style={styles.singleThesis}>
-                      {({ hovered }) => (
-                        hovered && (
-                          <View style={styles.hovered}>
-                            <Text style={styles.hoveredText}>Click to view</Text>
-                          </View>
-                        )
-                      )}
-                    </Hoverable>
-                  </View>
-                </Link>
+
+              return (
+                <>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedThesis({
+                        item,
+                        handle: getValidHandle(item),
+                        thesisId,
+                        title,
+                        author,
+                        year,
+                        publisher,
+                        universityCode,
+                      });
+                      setOpen(true);
+                    }}
+                  >
+                    <View style={styles.thesisCardWrapper}>
+                      <View
+                        style={[
+                          styles.relevanceIndicator,
+                          { backgroundColor: relevanceColor },
+                        ]}
+                      >
+                        <Text style={styles.relevanceText}>
+                          {nokiaRelevance}
+                        </Text>
+                      </View>
+
+                      <ThesisBox
+                        title={title}
+                        author={author}
+                        year={year}
+                        publisher={publisher}
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  <ModalWindow
+                    visible={
+                      open &&
+                      selectedThesis?.handle === getValidHandle(item)
+                    }
+                    onClose={() => {
+                      setOpen(false);
+                      setSelectedThesis(null);
+                    }}
+                  >
+                    {selectedThesis && (
+                      <SingleThesis
+                        key={`${selectedThesis.handle}-${selectedThesis.thesisId}`}
+                        handle={selectedThesis.handle}
+                        thesisId={selectedThesis.thesisId}
+                        title={selectedThesis.title}
+                        author={selectedThesis.author}
+                        year={selectedThesis.year}
+                        publisher={selectedThesis.publisher}
+                        universityCode={selectedThesis.universityCode}
+                      />
+                    )}
+                  </ModalWindow>
+                </>
               );
+
+
+
+
+
+
+
             }}
           />
         </>
@@ -822,13 +857,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     margin: 10,
     flex: 1,
-    maxWidth: "33%"
+    maxWidth: "28%"
   },
   relevanceIndicator: {
     position: 'absolute',
     minWidth: 180,
     top: -10,
-    left: '60%',
+    left: '70%',
     transform: [{ translateX: -80 }],
     paddingVertical: 0,
     paddingHorizontal: 12,
@@ -837,7 +872,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-
   relevanceText: {
     color: 'white',
     padding: 2,

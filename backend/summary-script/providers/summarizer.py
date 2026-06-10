@@ -22,14 +22,26 @@ except Exception as e:
     print(f"Warning: Failed to load the summarization model: {e}")
     summarizer = None
 
+def capitalize_first(text):
+    text = text.strip()
+    return text[:1].upper() + text[1:] if text else text
+
+
 def manual_summarize(text, num_points=4):
     if not sent_tokenize:
         sentences = [s.strip() for s in re.split(r'[.!?]', text) if s.strip()]
     else:
         sentences = sent_tokenize(text)
-    valid_sentences = [s for s in sentences if len(s) > 30 and not re.match(r'^(author|title|degree|supervisor|instructor|pages|date)', s.lower())]
+
+    valid_sentences = [
+        s for s in sentences
+        if len(s) > 30 and not re.match(
+            r'^(author|title|degree|supervisor|instructor|pages|date)',
+            s.lower()
+        )
+    ]
+
     if len(valid_sentences) >= num_points:
-        # Pick first, middle 2, and last sentence for diversity
         points = [
             valid_sentences[0],
             valid_sentences[len(valid_sentences)//3],
@@ -38,7 +50,11 @@ def manual_summarize(text, num_points=4):
         ]
     else:
         points = valid_sentences[:num_points]
-    return '\n'.join([f"• {point.strip()}" for point in points])
+
+    return '\n'.join([
+        f"• {capitalize_first(point)}"
+        for point in points
+    ])
 
 # Use transformer-based summarizer to create a summary, and if that fails or is not available,  falls back to a manual summarization method
 def generate_thesis_points(abstract_text):
@@ -64,7 +80,7 @@ def generate_thesis_points(abstract_text):
                     points = []
                     for s in sentences[:5]:  # Try to get up to 5 sentences
                         if len(s.strip()) > 10:
-                            points.append(f"• {s.strip()}")
+                            points.append(f"• {capitalize_first(s)}")
                     if len(points) >= 4:
                         result = '\n'.join(points[:4])
                         print(f"Using transformer summary with 4 points: {result}")

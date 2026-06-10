@@ -1,13 +1,13 @@
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, TextInput, Alert } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ThesisSummary } from "../components/ThesisSummary";
 import { ThesisQRCode } from "../components/ThesisQRCode";
 import { getThesisSummary, API_BASE_URL, setApiBaseUrl, getTestSummaryDirect } from "../utils/api";
 
-export default function SingleThesis() {
+export function SingleThesis(props:any) {
   const params = useLocalSearchParams();
-  const { handle, thesisId, title, author, year, publisher, universityCode  } = params;
+  const { handle, thesisId, title, author, year, publisher, universityCode  } = {...params, ...props};
   console.log(universityCode, thesisId);
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
@@ -15,6 +15,8 @@ export default function SingleThesis() {
   const [showApiConfig, setShowApiConfig] = useState(false);
   const [newApiUrl, setNewApiUrl] = useState(API_BASE_URL);
   const [retryCount, setRetryCount] = useState(0);
+
+  const requestIdRef = useRef(0);
 
   // Format handle for better consistency
   const formattedHandle = useMemo(() => {
@@ -44,9 +46,9 @@ export default function SingleThesis() {
     }
   }, [handle]);
 
+  const fetchThesisSummary = async () => {
+    const requestId = ++requestIdRef.current;
 
-  // Improve the fetchThesisSummary function to handle various server configurations
-  const fetchThesisSummary = async (forceRetry = false) => {
     if (!handle) {
       setSummaryError("No thesis handle provided");
       setSummary(null);
@@ -54,6 +56,7 @@ export default function SingleThesis() {
       return;
     }
 
+    setSummary(null);
     setSummaryLoading(true);
     setSummaryError(null);
 
@@ -110,17 +113,24 @@ export default function SingleThesis() {
       }
       setRetryCount(prev => prev + 1);
     } finally {
-      setSummaryLoading(false);
+      if (requestId === requestIdRef.current) {
+        setSummaryLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    if (handle) {
-      // Reset retry count
-      setRetryCount(0);
+    requestIdRef.current += 1;
+
+    setSummary(null);
+    setSummaryError(null);
+    setSummaryLoading(false);
+    setRetryCount(0);
+
+    if (handleKey && universityCode) {
       fetchThesisSummary();
     }
-  }, [handle]);
+  }, [handleKey, universityCode, thesisId]);
 
   // Add a button to manually try the test summary endpoint
   const tryTestSummary = async () => {
@@ -135,11 +145,11 @@ export default function SingleThesis() {
         throw new Error("No summary in test response");
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setSummaryError(`Test summary failed: ${error.message}`);
-      } else {
-        setSummaryError("Test summary failed");
-      }
+      setSummaryError(
+        error instanceof Error
+          ? `Test summary failed: ${error.message}`
+          : "Test summary failed"
+      );
     } finally {
       setSummaryLoading(false);
     }
@@ -186,6 +196,37 @@ export default function SingleThesis() {
             <ActivityIndicator size="large" color="#0000ff" />
             <Text style={styles.loadingText}>Loading summary...</Text>
           </View>
+        ) : summary ? (
+          <View>
+            {summaryError && (
+              <Text style={styles.warningText}>{summaryError}</Text>
+            )}
+
+            <ThesisSummary summary={summary} title={String(title)} />
+
+            {retryCount > 0 && (
+              <Text style={styles.retryNote}>
+                Note: Retrieved after {retryCount} retries
+              </Text>
+            )}
+
+            {summaryError && (
+              <TouchableOpacity
+                style={styles.debugButton}
+                onPress={() => {
+                  Alert.alert(
+                    "Raw Summary Data",
+                    typeof summary === "string"
+                      ? summary
+                      : JSON.stringify(summary),
+                    [{ text: "OK" }]
+                  );
+                }}
+              >
+                <Text style={styles.debugButtonText}>View Summary</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         ) : summaryError ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
@@ -217,31 +258,12 @@ export default function SingleThesis() {
               </TouchableOpacity>
             </View>
           </View>
-        ) : summary ? (
-          <View>
-            <ThesisSummary summary={summary} title={String(title)} />
-            {retryCount > 0 && (
-              <Text style={styles.retryNote}>Note: Retrieved after {retryCount} retries</Text>
-            )}
-            <TouchableOpacity 
-              style={styles.debugButton}
-              onPress={() => {
-                Alert.alert(
-                  "Raw Summary Data",
-                  typeof summary === 'string' ? summary : JSON.stringify(summary),
-                  [{ text: "OK" }]
-                );
-              }}
-            >
-              <Text style={styles.debugButtonText}>View Summary Data</Text>
-            </TouchableOpacity>
-          </View>
         ) : (
           <View style={styles.noSummaryContainer}>
             <Text style={styles.noSummaryText}>No summary available for this thesis.</Text>
             <TouchableOpacity
-              style={[styles.configButton, {marginTop: 10}]}
-              onPress={() => fetchThesisSummary(true)}
+              style={[styles.configButton, { marginTop: 10 }]}
+              onPress={fetchThesisSummary}
             >
               <Text style={styles.configButtonText}>Force Retry</Text>
             </TouchableOpacity>
@@ -349,6 +371,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#cc0000',
     marginBottom: 10,
+  },
+  warningText: {
+    color: "#ff9800",
+    marginBottom: 10,
+    textAlign: "center",
+    fontStyle: "italic",
   },
   errorHint: {
     fontStyle: 'italic',
