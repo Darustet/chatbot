@@ -84,7 +84,7 @@ const universityOptions = uniCodes.filter(
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 2;
+const RPP = 1;
 
 export default function ThesisList() {
   const [open, setOpen] = useState(false);
@@ -588,31 +588,27 @@ export default function ThesisList() {
                 universitySource = "default fallback";
               }
 
-              // Guard legacy/unscored items that do not include Nokia scoring fields yet.
-              const rawNokiaRelevance = item?.thesis?._nokiaRelevance ?? item?._nokiaRelevance;
-              const validNokiaLabels = ["NOKIA_COLLABORATION", "AMBIGUOUS", "NO_INDICATION_OF_COLLABORATION"];
-              const hasKnownRelevance =
-                typeof rawNokiaRelevance === "string" && validNokiaLabels.includes(rawNokiaRelevance);
-              const nokiaRelevance = hasKnownRelevance ? rawNokiaRelevance : "NOT_SCORED";
+              const nokiaRelevance = (openAI_decision) => {
+                if (openAI_decision === "yes") {
+                  return "NOKIA COLLABORATION";
+                } else if (openAI_decision === "no") {
+                  return "NO INDICATION OF COLLABORATION";;
+                } else  {
+                  return "AMBIGUOUS";
+                }
+              };
 
-              // Extract the Nokia score
-              const nokiaScore = getItemScore(item);
-              const scoreDisplay = nokiaScore >= 0 ? nokiaScore : "-";
-              const displayRelevance = nokiaRelevance
-                .replaceAll("_", " ")
-                .replace("NO INDICATION OF COLLABORATION", "NO COLLABORATION");
+              const displayRelevance = nokiaRelevance(openAI_decision);
 
               // Define relevance indicator color
               let relevanceColor = "#95a5a6"; // Gray for not scored / unknown
-              if (nokiaRelevance === "NOKIA_COLLABORATION") {
+              if (displayRelevance === "NOKIA COLLABORATION") {
                 relevanceColor = "#2ecc71"; // Green for high
-              } else if (nokiaRelevance === "AMBIGUOUS") {
+              } else if (displayRelevance === "AMBIGUOUS") {
                 relevanceColor = "#f39c12"; // Orange for medium
-              } else if (nokiaRelevance === "NO_INDICATION_OF_COLLABORATION") {
+              } else if (displayRelevance === "NO INDICATION OF COLLABORATION") {
                 relevanceColor = "#e74c3c"; // Red for low
               }
-
-
 
               return (
                 <>
@@ -639,7 +635,7 @@ export default function ThesisList() {
                         ]}
                       >
                         <Text style={styles.relevanceText}>
-                          {nokiaRelevance}
+                          {displayRelevance}
                         </Text>
                       </View>
 
@@ -677,13 +673,6 @@ export default function ThesisList() {
                   </ModalWindow>
                 </>
               );
-
-
-
-
-
-
-
             }}
           />
         </>
@@ -861,7 +850,7 @@ const styles = StyleSheet.create({
   },
   relevanceIndicator: {
     position: 'absolute',
-    minWidth: 180,
+    minWidth: 270,
     top: -10,
     left: '70%',
     transform: [{ translateX: -80 }],
