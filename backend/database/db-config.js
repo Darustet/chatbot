@@ -46,10 +46,13 @@ const thesisExportView = `CREATE VIEW IF NOT EXISTS theses_export_view AS
     t.year,
     t.title,
     t.link,
+    t.abstract_text,
+
     rl.name AS rule_label,
     t.rule_score,
     t.rule_reasons,
-    t.abstract_text,
+
+    fl.name AS final_label,
     t.openAI_decision,
     t.openAI_evidence
   FROM theses t
