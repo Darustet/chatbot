@@ -36,56 +36,63 @@ function toTextOrNull(value) {
 	return String(value);
 }
 
-// resolve final_label_id from payload, if final_label_id is provided return it, 
-// otherwise try to resolve it from labelName or label,
-// if not found create a new label and return its id
-function resolveLabelId(payload) {
-	if (payload.final_label_id !== undefined && payload.final_label_id !== null) {
-		return payload.final_label_id;
-	}
+const getFinalLabelName = (openAIDecision) => {
+  if (openAIDecision === 'yes') {
+    return 'NOKIA_COLLABORATION';
+  }
 
-	const labelName = payload.labelName || payload.label;
-	if (!labelName) {
-		return null;
-	}
+  if (openAIDecision === 'no') {
+    return 'NO_INDICATION_OF_COLLABORATION';
+  }
 
-	const existing = getLabelIdByName(labelName);
-	return existing ?? createLabel(labelName);
+  return 'AMBIGUOUS';
+};
+
+function resolveLabelId(labelName) {
+  if (!labelName) {
+    return null;
+  }
+
+  const existing = getLabelIdByName(labelName);
+
+  if (existing) {
+    return existing;
+  }
+
+  return createLabel(labelName);
 }
 
 function normalizeThesisPayload(payload = {}) {
   if (typeof payload !== 'object' || payload === null) {
     throw new Error('Invalid payload: expected an object');
   }
+
   if (!payload.title) {
     throw new Error('Missing required field: title');
   }
-	const ruleReasonsRaw = payload.rule_reasons ?? null;
-	const ruleReasonsStr = toTextOrNull(ruleReasonsRaw);
 
+  const openAIDecision = payload.openAI_decision ?? 'unknown';
+  const finalLabelName = getFinalLabelName(openAIDecision);
 
-	return {
-		title: payload.title ?? '',
-		author: payload.author ?? '',
-		year: toIntOrNull(payload.year),
-		university: payload.university ?? null,
-		university_code: payload.university_code ?? payload.universityCode ?? null,
-		handle: payload.handle ?? null,
-		link: payload.link ?? null,
-		thesisId: payload.thesisId ?? payload.thesis_id ?? null,
-		abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
-		publisher: payload.publisher ?? null,
-		final_label_id: resolveLabelId(payload),
-		rule_label: payload.rule_label ?? null,
-		rule_score: toIntOrNull(payload.rule_score),
-		rule_reasons: ruleReasonsStr,
-		ml_label: payload.ml_label ?? null,
-		ml_probability: toFloatOrNull(payload.ml_probability),
-		hybrid_label: payload.hybrid_label ?? null,
-		hybrid_reasons: payload.hybrid_reasons ?? null,
-		openAI_decision: payload.openAI_decision ?? null,
-		openAI_evidence: payload.openAI_evidence ?? null,
-	};
+  return {
+    title: payload.title ?? '',
+    author: payload.author ?? '',
+    year: toIntOrNull(payload.year),
+    university: payload.university ?? null,
+    university_code: payload.university_code ?? payload.universityCode ?? null,
+    handle: payload.handle ?? null,
+    link: payload.link?.trim() ?? null,
+    thesisId: payload.thesisId ?? payload.thesis_id ?? null,
+    abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
+
+    rule_label_id: payload.rule_label_id ?? resolveLabelId(payload.rule_label),
+    rule_score: toIntOrNull(payload.rule_score),
+    rule_reasons: toTextOrNull(payload.rule_reasons),
+
+    final_label_id: payload.final_label_id ?? resolveLabelId(finalLabelName),
+    openAI_decision: openAIDecision,
+    openAI_evidence: payload.openAI_evidence ?? null
+  };
 }
 
 const listTheses = () => getAllTheses();
