@@ -9,6 +9,7 @@ import { calculateNokiaCollaborationScoreByRules } from "./utils/relevance.js";
 import { deduplicate, resolveThesisLink } from "./providers/helpers.js";
 import { uniCodes, validUniCodes } from "./config/universities.js";
 import { createThesisEntry, findThesisByLink } from "./database/services/thesisService.js";
+import { findLabelIdByName } from "./database/services/labelService.js";
 import { analyzeDecisionSource } from "./openAiDecision.js";
 
 const app = express();
@@ -98,7 +99,6 @@ app.get("/uni/:uni", async (req, res) => {
             const thesis = t.thesis || {};
             const scoreData = calculateNokiaCollaborationScoreByRules(thesis);
 
-            console.log(thesis.link, "scoreData:", scoreData);
             return {
                 thesis: thesis,
                 _nokiaScore: scoreData._nokiaScore,
@@ -133,8 +133,21 @@ app.get("/uni/:uni", async (req, res) => {
 
       const getOpenAIDecision = await analyzeDecisionSource(thesis.link, thesis.title, abstract);
 
-      item.openAI_decision = getOpenAIDecision.decision || "unknown";
-      item.openAI_evidence = getOpenAIDecision.evidence || "unknown";
+      item.openAI_decision = getOpenAIDecision?.decision || "unknown";
+      item.openAI_evidence = getOpenAIDecision?.evidence || "unknown";
+
+      const getFinalLabelId = (decision) => {
+        if (decision === "yes") {
+          return 1;
+        } else if (decision === "no") {
+          return 3;
+        } else {
+          return 2;
+        }
+      };
+
+      const ruleLabelId = findLabelIdByName(item._nokiaRelevance);
+      const finalLabelId = getFinalLabelId(item.openAI_decision);
 
       const ThesisToInsertDb = await createThesisEntry({
         title: thesis.title,
@@ -146,17 +159,13 @@ app.get("/uni/:uni", async (req, res) => {
         link: thesis.link,
         thesisId: thesis.thesisId || null,
         abstract_text: abstract,
-        final_label_id: null,
 
+        rule_label_id: ruleLabelId,
         rule_label: item._nokiaRelevance,
         rule_score: item._nokiaScore,
         rule_reasons: item._nokiaReasons?.join("; ") || null,
 
-        ml_label: null,
-        ml_probability: null,
-        hybrid_label: null,
-        hybrid_reasons: null,
-
+        final_label_id: finalLabelId,
         openAI_decision: item.openAI_decision,
         openAI_evidence: item.openAI_evidence,
       });

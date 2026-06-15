@@ -39,7 +39,7 @@ function parseClassification(raw) {
 async function classify(abstractText = "") {
   try {
     const response = await client.responses.create({
-      model: "gpt-5.4",
+      model: "gpt-5-mini",
       input: [
         {
           role: "system",
@@ -144,8 +144,8 @@ export async function analyzeDecisionSource(thesisUrl = "", title = "", abstract
 
     const abstractResult = await classify(abstractText);
 
-  if (classification.error) {
-    result.errors.push(`Abstract classification failed: ${classification.error}`);
+  if (abstractResult.error) {
+    result.errors.push(`Abstract classification failed: ${abstractResult.error}`);
   }
 
     result.decision = abstractResult.decision;
