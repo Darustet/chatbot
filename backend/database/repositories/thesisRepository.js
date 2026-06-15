@@ -35,9 +35,9 @@ const createThesis = (thesis) => {
   .prepare(`
     INSERT INTO theses (
       title, author, year, university, university_code, handle, link, thesisId,
-      abstract_text, final_label_id, rule_label, rule_score, rule_reasons,
-      ml_label, ml_probability, hybrid_label, hybrid_reasons, openAI_decision, openAI_evidence
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      abstract_text, rule_label_id, rule_score, rule_reasons, final_label_id,
+      openAI_decision, openAI_evidence
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
     .run(
@@ -50,14 +50,12 @@ const createThesis = (thesis) => {
     thesis.link,
     thesis.thesisId,
     thesis.abstract_text,
-    thesis.final_label_id,
-    thesis.rule_label,
+
+    thesis.rule_label_id,
     thesis.rule_score,
     thesis.rule_reasons,
-    thesis.ml_label,
-    thesis.ml_probability,
-    thesis.hybrid_label,
-    thesis.hybrid_reasons,
+
+    thesis.final_label_id,
     thesis.openAI_decision,
     thesis.openAI_evidence);
 
@@ -72,9 +70,8 @@ const updateThesis = (id, thesis) => {
     .prepare(`
       UPDATE theses SET
         title = ?, author = ?, year = ?, university = ?, university_code = ?, handle = ?, link = ?,
-        thesisId = ?, abstract_text = ?, final_label_id = ?, rule_label = ?, rule_score = ?, rule_reasons = ?,
-        ml_label = ?, ml_probability = ?, hybrid_label = ?, hybrid_reasons = ?,
-        openAI_decision = ?, openAI_evidence = ?
+        thesisId = ?, abstract_text = ?, rule_label_id = ?, rule_score = ?, rule_reasons = ?,
+        final_label_id = ?, openAI_decision = ?, openAI_evidence = ?
       WHERE id = ?
     `)
     .run(
@@ -87,14 +84,12 @@ const updateThesis = (id, thesis) => {
       thesis.link,
       thesis.thesisId,
       thesis.abstract_text,
-      thesis.final_label_id,
-      thesis.rule_label,
+
+      thesis.rule_label_id,
       thesis.rule_score,
       thesis.rule_reasons,
-      thesis.ml_label,
-      thesis.ml_probability,
-      thesis.hybrid_label,
-      thesis.hybrid_reasons,
+
+      thesis.final_label_id,
       thesis.openAI_decision,
       thesis.openAI_evidence,
       id
