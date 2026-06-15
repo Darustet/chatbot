@@ -1,5 +1,9 @@
-import { StyleSheet, ActivityIndicator, FlatList, Text, View, TextInput, TouchableOpacity } from "react-native";
-import { Link } from "expo-router";
+import { StyleSheet,
+  ActivityIndicator,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
 import { Hoverable } from "react-native-web-hover";
@@ -541,12 +545,8 @@ export default function ThesisList() {
       ) : (
         <>
           <Text style={styles.emptySubText}>Found {filteredTheses.length} theses</Text>
-          <FlatList
-            data={filteredTheses}
-            numColumns={3}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }: { item: any }) => {
-              // console.log("Rendering thesis item:", item);
+          <View style={styles.thesisGrid}>
+            {filteredTheses.map((item: any, index: number) => {
 
               // Enhanced string extraction with improved fallbacks
               const title = String(item?.thesis?.title || item?.title || "Untitled Thesis");
@@ -612,10 +612,8 @@ export default function ThesisList() {
                 relevanceColor = "#e74c3c"; // Red for low
               }
 
-
-
               return (
-                <>
+                <View key={`${thesisId}-${index}`} style={styles.thesisCardWrapper}>
                   <TouchableOpacity
                     onPress={() => {
                       setSelectedThesis({
@@ -631,7 +629,7 @@ export default function ThesisList() {
                       setOpen(true);
                     }}
                   >
-                    <View style={styles.thesisCardWrapper}>
+                    <View>
                       <View
                         style={[
                           styles.relevanceIndicator,
@@ -653,10 +651,7 @@ export default function ThesisList() {
                   </TouchableOpacity>
 
                   <ModalWindow
-                    visible={
-                      open &&
-                      selectedThesis?.handle === getValidHandle(item)
-                    }
+                    visible={open && selectedThesis?.handle === getValidHandle(item)}
                     onClose={() => {
                       setOpen(false);
                       setSelectedThesis(null);
@@ -675,17 +670,10 @@ export default function ThesisList() {
                       />
                     )}
                   </ModalWindow>
-                </>
+                </View>
               );
-
-
-
-
-
-
-
-            }}
-          />
+            })}
+          </View>
         </>
       )}
     </View>
@@ -853,18 +841,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
   },
+  thesisGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    gap: 20,
+
+  },
   thesisCardWrapper: {
     position: 'relative',
-    margin: 10,
-    flex: 1,
-    maxWidth: "28%"
+    marginBottom: 20,
+    width: 420,
+  },
+  columnWrapper: {
+    justifyContent: 'left'
   },
   relevanceIndicator: {
     position: 'absolute',
     minWidth: 180,
-    top: -10,
-    left: '70%',
-    transform: [{ translateX: -80 }],
+    top: -8,
+    left: '2%',
     paddingVertical: 0,
     paddingHorizontal: 12,
     borderRadius: 8,
