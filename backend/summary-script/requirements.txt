@@ -10,3 +10,4 @@ transformers==4.38.2
 tokenizers==0.15.1
 nltk==3.6.5
 beautifulsoup4==4.10.0
+openai
