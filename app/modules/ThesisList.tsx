@@ -3,7 +3,8 @@ import { StyleSheet,
   Text,
   View,
   TextInput,
-  TouchableOpacity } from "react-native";
+  TouchableOpacity,
+   useWindowDimensions} from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { ThesisBox } from "@/components/moduleComps/ThesisBox";
 import { Hoverable } from "react-native-web-hover";
@@ -91,6 +92,18 @@ const API_BASE_URL = config.API_BASE_URL;
 const RPP = 2;
 
 export default function ThesisList() {
+  const { width } = useWindowDimensions();
+
+  const containerWidth = width * 0.9 - 40;
+  const gap = 20;
+
+  const columns =
+    containerWidth >= 1200 ? 3 :
+    containerWidth >= 760 ? 2 :
+    1;
+
+  const cardWidth = (containerWidth - gap * (columns - 1)) / columns;
+
   const [open, setOpen] = useState(false);
   const [selectedThesis, setSelectedThesis] = useState<any | null>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
@@ -613,7 +626,11 @@ export default function ThesisList() {
               }
 
               return (
-                <View key={`${thesisId}-${index}`} style={styles.thesisCardWrapper}>
+                <View
+                  key={`${thesisId}-${index}`}
+                  style={[styles.thesisCardWrapper,
+                    { width: cardWidth },
+                  ]}>
                   <TouchableOpacity
                     onPress={() => {
                       setSelectedThesis({
@@ -851,7 +868,6 @@ const styles = StyleSheet.create({
   thesisCardWrapper: {
     position: 'relative',
     marginBottom: 20,
-    width: 420,
   },
   columnWrapper: {
     justifyContent: 'left'
