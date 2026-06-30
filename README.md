@@ -84,3 +84,4 @@ If you rename the Python service in Render, update `SUMMARY_SERVICE_URL` in the 
 2. Score with rule-based relevance logic.
 3. Classify with ML service (`POST /classify-thesis` on port 5001).
 4. Save merged result to SQLite database (`backend/theses.sqlite`).
+
