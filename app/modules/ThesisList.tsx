@@ -84,7 +84,7 @@ const universityOptions = uniCodes.filter(
 
 const API_BASE_URL = config.API_BASE_URL;
 // number of theses to fetch per university when a specific university is selected (increased to get more data for relevance filtering)
-const RPP = 1;
+const RPP = 20;
 
 export default function ThesisList() {
   const [open, setOpen] = useState(false);
@@ -157,7 +157,22 @@ export default function ThesisList() {
           });
 
           const results = await Promise.all(allPromises);
-          fetchedData = results.flat();
+
+          fetchedData = results.flat().sort((a, b) => {
+            const decisionOrder = {
+              yes: 0,
+              no: 1,
+              unknown: 2,
+            };
+
+            const aDecision = a.thesis?.openAI_decision ?? "unknown";
+            const bDecision = b.thesis?.openAI_decision ?? "unknown";
+
+            return (
+              (decisionOrder[aDecision] ?? 99) -
+              (decisionOrder[bDecision] ?? 99)
+            );
+          });
         } else if (searchedUni === "all") {
           // When "All" is selected, fetch from multiple major universities
           setLoading(true);
