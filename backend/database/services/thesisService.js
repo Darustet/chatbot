@@ -1,68 +1,47 @@
 import {
-	getAllTheses,
-	getThesisById,
-	getThesisByLink,
-	getAbstractByLink,
-	createThesis,
-	updateThesis,
-	deleteThesis
+  getAllTheses,
+  getThesisById,
+  getThesisByLink,
+  getAbstractByLink,
+  getThesesByUniversityCode,
+  createThesis,
+  updateThesis,
+  deleteThesis
 } from '../repositories/thesisRepository.js';
-import { getLabelIdByName, createLabel } from '../repositories/labelRepository.js';
 
-// convert empty strings, undefined or null to null, otherwise return the integer value
+import {
+  getLabelIdByName,
+  createLabel
+} from '../repositories/labelRepository.js';
+
 function toIntOrNull(value) {
-	if (value === undefined || value === null || value === '') {
-		return null;
-	}
-	const parsed = Number.parseInt(String(value), 10);
-	return Number.isNaN(parsed) ? null : parsed;
-}
-
-function toFloatOrNull(value) {
-	if (value === undefined || value === null || value === '') {
-		return null;
-	}
-	const parsed = Number.parseFloat(String(value));
-	return Number.isNaN(parsed) ? null : parsed;
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 function toTextOrNull(value) {
-	if (value === undefined || value === null || value === '') {
-		return null;
-	}
-	if (Array.isArray(value)) {
-		return JSON.stringify(value);
-	}
-	return String(value);
+  if (value === undefined || value === null || value === '') return null;
+  if (Array.isArray(value)) return JSON.stringify(value);
+  return String(value);
 }
 
 const getFinalLabelName = (openAIDecision) => {
-  if (openAIDecision === 'yes') {
-    return 'NOKIA_COLLABORATION';
-  }
-
-  if (openAIDecision === 'no') {
-    return 'NO_INDICATION_OF_COLLABORATION';
-  }
-
+  if (openAIDecision === 'yes') return 'NOKIA_COLLABORATION';
+  if (openAIDecision === 'no') return 'NO_INDICATION_OF_COLLABORATION';
   return 'AMBIGUOUS';
 };
 
-function resolveLabelId(labelName) {
-  if (!labelName) {
-    return null;
-  }
+async function resolveLabelId(labelName) {
+  if (!labelName) return null;
 
-  const existing = getLabelIdByName(labelName);
+  const existing = await getLabelIdByName(labelName);
+  if (existing) return existing;
 
-  if (existing) {
-    return existing;
-  }
-
-  return createLabel(labelName);
+  return await createLabel(labelName);
 }
 
-function normalizeThesisPayload(payload = {}) {
+async function normalizeThesisPayload(payload = {}) {
   if (typeof payload !== 'object' || payload === null) {
     throw new Error('Invalid payload: expected an object');
   }
@@ -85,41 +64,42 @@ function normalizeThesisPayload(payload = {}) {
     thesisId: payload.thesisId ?? payload.thesis_id ?? null,
     abstract_text: payload.abstract_text ?? payload.abstractText ?? null,
 
-    rule_label_id: payload.rule_label_id ?? resolveLabelId(payload.rule_label),
+    rule_label_id: payload.rule_label_id ?? await resolveLabelId(payload.rule_label),
     rule_score: toIntOrNull(payload.rule_score),
     rule_reasons: toTextOrNull(payload.rule_reasons),
 
-    final_label_id: payload.final_label_id ?? resolveLabelId(finalLabelName),
+    final_label_id: payload.final_label_id ?? await resolveLabelId(finalLabelName),
     openAI_decision: openAIDecision,
     openAI_evidence: payload.openAI_evidence ?? null
   };
 }
 
 const listTheses = () => getAllTheses();
-
 const findThesisById = (id) => getThesisById(id);
 const findThesisByLink = (link) => getThesisByLink(link);
 const findAbstractByLink = (link) => getAbstractByLink(link);
+const findThesesByUniversityCode = (universityCode) => getThesesByUniversityCode(universityCode);
 
-const createThesisEntry = (payload) => {
-	const thesis = normalizeThesisPayload(payload);
-	return createThesis(thesis);
+const createThesisEntry = async (payload) => {
+  const thesis = await normalizeThesisPayload(payload);
+  return await createThesis(thesis);
 };
 
-const updateThesisEntry = (id, payload) => {
-	const thesis = normalizeThesisPayload(payload);
-	return updateThesis(id, thesis);
+const updateThesisEntry = async (id, payload) => {
+  const thesis = await normalizeThesisPayload(payload);
+  return await updateThesis(id, thesis);
 };
 
 const deleteThesisEntry = (id) => deleteThesis(id);
 
 export {
-	listTheses,
-	findThesisById,
-	findThesisByLink,
-	findAbstractByLink,
-	createThesisEntry,
-	updateThesisEntry,
-	deleteThesisEntry,
-	normalizeThesisPayload
+  listTheses,
+  findThesisById,
+  findThesisByLink,
+  findAbstractByLink,
+  findThesesByUniversityCode,
+  createThesisEntry,
+  updateThesisEntry,
+  deleteThesisEntry,
+  normalizeThesisPayload
 };

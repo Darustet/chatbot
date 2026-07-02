@@ -1,56 +1,57 @@
 import db from '../db.js';
 
-const getLabelIdByName = (name) => {
-  const labelId = db
-    .prepare('SELECT id FROM labels WHERE name = ?')
-    .get(name);
-  if (!labelId) {
-    return null;
-  }
-  return labelId.id;
+const getLabelIdByName = async (name) => {
+  const result = await db.query(
+    'SELECT id FROM labels WHERE name = $1',
+    [name]
+  );
+
+  if (result.rows.length === 0) return null;
+  return result.rows[0].id;
 };
 
-const getLabelById = (id) => {
-  const label = db
-    .prepare('SELECT * FROM labels WHERE id = ?')
-    .get(id);
-  if (!label) {
-    return null;
-  }
-  return label;
+const getLabelById = async (id) => {
+  const result = await db.query(
+    'SELECT * FROM labels WHERE id = $1',
+    [id]
+  );
+
+  if (result.rows.length === 0) return null;
+  return result.rows[0];
 };
 
+const createLabel = async (name) => {
+  const result = await db.query(
+    'INSERT INTO labels (name) VALUES ($1) RETURNING id',
+    [name]
+  );
 
-const createLabel = (name) => {
-  const stmt = db
-    .prepare('INSERT INTO labels (name) VALUES (?)')
-    .run(name);
-  if (stmt.lastInsertRowid === 0) {
-    throw new Error('Failed to create label');
-  }
-  return getLabelIdByName(name);
+  return result.rows[0].id;
 };
 
-const updateLabel = (id, name) => {
-  const stmt = db
-    .prepare('UPDATE labels SET name = ? WHERE id = ?')
-    .run(name, id);
-  if (stmt.changes === 0) {
+const updateLabel = async (id, name) => {
+  const result = await db.query(
+    'UPDATE labels SET name = $1 WHERE id = $2 RETURNING *',
+    [name, id]
+  );
+
+  if (result.rows.length === 0) {
     throw new Error('Failed to update label');
   }
-  return getLabelById(id);
+
+  return result.rows[0];
 };
 
-const deleteLabel = (id) => {
-  const deleteTransaction  = db.transaction((labelId) => {
-    const stmt = db.prepare('DELETE FROM labels WHERE id = ?').run(id);
-    if (stmt.changes === 0) {
-      throw new Error('Failed to delete label');
-    }
-  });
+const deleteLabel = async (id) => {
+  const result = await db.query(
+    'DELETE FROM labels WHERE id = $1 RETURNING id',
+    [id]
+  );
 
-  deleteTransaction(id);
-}
+  if (result.rows.length === 0) {
+    throw new Error('Failed to delete label');
+  }
+};
 
 export {
   getLabelIdByName,

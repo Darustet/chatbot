@@ -6,24 +6,24 @@ import {
   deleteLabel
 } from '../repositories/labelRepository.js';
 
-const findLabelIdByName = (name) => {
-  return getLabelIdByName(name);
+const findLabelIdByName = async (name) => {
+  return await getLabelIdByName(name);
 };
 
-const findLabelById = (id) => {
-  return getLabelById(id);
+const findLabelById = async (id) => {
+  return await getLabelById(id);
 };
 
-const addLabel = (name) => {
-  return createLabel(name);
+const addLabel = async (name) => {
+  return await createLabel(name);
 };
 
-const modifyLabel = (id, name) => {
-  return updateLabel(id, name);
+const modifyLabel = async (id, name) => {
+  return await updateLabel(id, name);
 };
 
-const removeLabel = (id) => {
-  deleteLabel(id);
+const removeLabel = async (id) => {
+  return await deleteLabel(id);
 };
 
 export {
