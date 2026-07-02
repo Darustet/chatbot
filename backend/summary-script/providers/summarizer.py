@@ -1,120 +1,108 @@
-from transformers import pipeline
+import os
 import re
+from google import genai
+from dotenv import load_dotenv
 
-try:
-    import nltk
-    try:
-        nltk.data.find('tokenizers/punkt')
-        # nltk.data.find('tokenizers/punkt_tab')
-    except LookupError:
-        print("Downloading NLTK resources...")
-        nltk.download('punkt')
-        # nltk.download('punkt_tab')
-    from nltk.tokenize import sent_tokenize
-except ImportError:
-    print("Warning: nltk not installed. Falling back to simple split.")
-    sent_tokenize = None
+load_dotenv()
 
-try:
-    summarizer = pipeline("summarization", model="facebook/bart-large-cnn", use_fast=True)
-    print("Successfully loaded facebook/bart-large-cnn model")
-except Exception as e:
-    print(f"Warning: Failed to load the summarization model: {e}")
-    summarizer = None
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
 
 def capitalize_first(text):
-    text = text.strip()
-    return text[:1].upper() + text[1:] if text else text
+  text = str(text or "").strip()
+  return text[:1].upper() + text[1:] if text else text
 
 
-def manual_summarize(text, num_points=4):
-    if not sent_tokenize:
-        sentences = [s.strip() for s in re.split(r'[.!?]', text) if s.strip()]
-    else:
-        sentences = sent_tokenize(text)
+def clean_generated_summary(text):
+  text = str(text or "").strip()
 
-    valid_sentences = [
-        s for s in sentences
-        if len(s) > 30 and not re.match(
-            r'^(author|title|degree|supervisor|instructor|pages|date)',
-            s.lower()
-        )
+  lines = []
+
+  for line in text.splitlines():
+    line = line.strip()
+    line = re.sub(r"^[-*•\d.)\s]+", "", line).strip()
+
+    if line:
+      lines.append(line)
+
+  return "\n".join(lines)
+
+
+def manual_summarize(text, num_points=3):
+  sentences = [
+    sentence.strip()
+    for sentence in re.split(r"(?<=[.!?])\s+", str(text or ""))
+    if sentence.strip()
+  ]
+
+  valid_sentences = [
+    sentence
+    for sentence in sentences
+    if len(sentence) > 30
+       and not re.match(
+      r"^(author|title|degree|supervisor|instructor|pages|date)",
+      sentence.lower(),
+    )
+  ]
+
+  if not valid_sentences:
+    return "No meaningful abstract content found to summarize."
+
+  if len(valid_sentences) >= num_points:
+    points = [
+      valid_sentences[0],
+      valid_sentences[len(valid_sentences) // 2],
+      valid_sentences[-1],
     ]
+  else:
+    points = valid_sentences[:num_points]
 
-    if len(valid_sentences) >= num_points:
-        points = [
-            valid_sentences[0],
-            valid_sentences[len(valid_sentences)//3],
-            valid_sentences[(2*len(valid_sentences))//3],
-            valid_sentences[-1]
-        ]
-    else:
-        points = valid_sentences[:num_points]
+  return "\n".join([capitalize_first(point) for point in points])
 
-    return '\n'.join([
-        f"• {capitalize_first(point)}"
-        for point in points
-    ])
 
-# Use transformer-based summarizer to create a summary, and if that fails or is not available,  falls back to a manual summarization method
 def generate_thesis_points(abstract_text):
-    try:
-        if not abstract_text or len(abstract_text) < 60:
-            return "• No meaningful abstract content found to summarize.\n• The PDF might not contain an abstract section.\n• Try a different thesis."
-        manual_points = manual_summarize(abstract_text, num_points=4)
-        if summarizer:
-            try:
-                input_length = len(abstract_text.split())
-                max_length = min(150, max(input_length // 3, 30))
-                print(f"Using facebook/bart-large-cnn with max_length={max_length}")
-                summary = summarizer(
-                    abstract_text,
-                    max_length=max_length,
-                    min_length=min(max_length-10, 20),
-                    do_sample=False,
-                    truncation=True
-                )[0]['summary_text']
-                print(f"Raw transformer summary: {summary}")
-                if sent_tokenize:
-                    sentences = sent_tokenize(summary)
-                    points = []
-                    for s in sentences[:5]:  # Try to get up to 5 sentences
-                        if len(s.strip()) > 10:
-                            points.append(f"• {capitalize_first(s)}")
-                    if len(points) >= 4:
-                        result = '\n'.join(points[:4])
-                        print(f"Using transformer summary with 4 points: {result}")
-                        return result
-                    elif len(points) >= 2:
-                        result = '\n'.join(points)
-                        print(f"Using transformer summary with fewer than 4 points: {result}")
-                        return result
-                    else:
-                        print("Transformer summary too short, using manual summary instead")
-                        return manual_points
-                else:
-                    return manual_points
-            except Exception as e:
-                print(f"Error during summarization: {e}")
-                return manual_points
-        else:
-            print("Summarizer not available, using manual summary")
-            return manual_points
-    except Exception as e:
-        print(f"Error in summarization process: {e}")
-        return "• Could not generate summary points.\n• The thesis might be in a format that's difficult to process.\n• Try a different thesis."
+  try:
+    abstract_text = str(abstract_text or "").strip()
 
-def getSummarize(abstract_text):
-    try:
-        print(f"\n====== SUMMARIZATION START ======")
-        print(f"Abstract text length: {len(abstract_text)} chars")
-        print(f"Abstract text preview: {abstract_text[:500]}..." if len(abstract_text) > 500 else abstract_text)
+    if len(abstract_text) < 60:
+      return (
+        "No meaningful abstract content found to summarize.\n"
+        "The PDF might not contain an abstract section.\n"
+        "Try a different thesis."
+      )
 
-        summary = generate_thesis_points(abstract_text)
+    if not os.getenv("GEMINI_API_KEY"):
+      print("GEMINI_API_KEY missing, using manual summary")
+      return manual_summarize(abstract_text)
 
-        print(f"Generated Summary:\n{summary}")
-        return summary
+    prompt = f"""
+      Summarize the following thesis abstract.
 
-    except Exception as e:
-        print(f"Error in summarization process: {e}")
-        return "• Could not generate summary points.\n• The thesis might be in a format that's difficult to process.\n• Try a different thesis."
+      Rules:
+      - Use the same language as the abstract.
+      - Generate the summary using only information in the abstract.
+      - Return 2–4 concise sentences.
+      - Each sentence must be on a separate line.
+      - Return only the sentences and nothing else.
+      - Do not add or infer information that is not present in the abstract.
+      - Do not add any introduction, conclusion, explanation, headings, labels, Markdown, bullet points, numbering, or other formatting.
+
+      Abstract:
+      {abstract_text}
+      """.strip()
+
+    response = client.models.generate_content(
+      model="gemini-2.5-flash",
+      contents=prompt,
+    )
+
+    summary = clean_generated_summary(response.text)
+
+    if not summary:
+      return manual_summarize(abstract_text)
+
+    return summary
+
+  except Exception as e:
+    print(f"Error in Gemini summarization: {e}")
+    return manual_summarize(abstract_text)
